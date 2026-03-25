@@ -1,5 +1,15 @@
-Snoozr: Prototype Project
+# Snoozr: Prototype Project
+Built by Ignatius Hewett using Sonnet 4.6
 
-Web-based Progressive Sleep Tracker build for Strong Habit Building and Reduced 
+## About
+Snoozr is a web-based progressive sleep tracker made with building strong sleep habits over perfecting unrealistic schedules. 
 
-Ignatius Hewett   
+Reasearch reveals a common issue with traditional sleep trackers are users obsessing over strict sleeping goals, which has lead to insomnia and increased anxiety.
+
+This is an early 'proof of concept' or prototype heavily build using Claude's Sonnet 4.6. 
+
+## Features
+- User Authenication
+- Logging System
+- Sleep Tracking
+- Early Goal Generation
