@@ -1,0 +1,3197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Snoozr — HSC Task #2 Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   DESIGN SYSTEM — SNOOZR
+   Aesthetic: Modern dark-mode app (Discord / Claude inspired)
+   Deep charcoal backgrounds, soft lavender/indigo accents,
+   warm amber highlights for achievements. Rounded, padded,
+   application feel with sidebar navigation.
+   ═══════════════════════════════════════════════════════════════ */
+
+:root {
+  --bg-darkest:    #0b0d10;
+  --bg-dark:       #111318;
+  --bg-card:       #181a20;
+  --bg-elevated:   #1e2028;
+  --bg-hover:      #252830;
+  --bg-input:      #14161b;
+  --border:        #2a2d36;
+  --border-light:  #353840;
+
+  --lavender:      #8b7cf6;
+  --lavender-dim:  #6c5ce7;
+  --lavender-pale: rgba(139,124,246,0.12);
+  --lavender-glow: rgba(139,124,246,0.25);
+
+  --indigo:        #6366f1;
+  --indigo-pale:   rgba(99,102,241,0.12);
+
+  --amber:         #f6c558;
+  --amber-dark:    #e0a820;
+  --amber-pale:    rgba(246,197,88,0.12);
+
+  --green:         #34d399;
+  --green-dark:    #059669;
+  --green-pale:    rgba(52,211,153,0.12);
+
+  --blue:          #60a5fa;
+  --blue-pale:     rgba(96,165,250,0.12);
+
+  --red:           #f87171;
+  --red-pale:      rgba(248,113,113,0.12);
+
+  --teal:          #2dd4bf;
+  --teal-pale:     rgba(45,212,191,0.12);
+
+  --text:          #e8eaf0;
+  --text-secondary:#9ca3b4;
+  --text-muted:    #5f6577;
+  --text-dim:      #3e4250;
+  --white:         #ffffff;
+
+  --shadow:        0 2px 12px rgba(0,0,0,0.35);
+  --shadow-lg:     0 8px 32px rgba(0,0,0,0.5);
+  --shadow-glow:   0 0 20px rgba(139,124,246,0.15);
+  --radius:        10px;
+  --radius-lg:     14px;
+  --radius-xl:     18px;
+
+  --font:          'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-display:  'Outfit', 'DM Sans', sans-serif;
+  --mono:          'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--font);
+  background: var(--bg-darkest);
+  color: var(--text);
+  min-height: 100vh;
+  line-height: 1.6;
+  overflow: hidden;
+}
+
+/* ── SCROLLBAR ────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+/* ═══════════════════════════════════════════════════
+   SPLASH SCREEN
+   ═══════════════════════════════════════════════════ */
+#splashScreen {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #0f0c29 0%, #1a1040 35%, #24243e 70%, #0f0c29 100%);
+  transition: opacity 0.5s ease, visibility 0.5s ease;
+}
+#splashScreen.hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+.splash-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  animation: splashPulse 1.5s ease-in-out;
+}
+.splash-logo {
+  width: 88px; height: 88px;
+  background: linear-gradient(135deg, var(--lavender), var(--indigo));
+  border-radius: 22px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 44px;
+  box-shadow: 0 0 60px rgba(139,124,246,0.4), 0 0 120px rgba(99,102,241,0.2);
+  animation: splashFloat 1.5s ease-in-out;
+}
+.splash-text {
+  font-family: var(--font-display);
+  font-size: 36px;
+  font-weight: 800;
+  background: linear-gradient(90deg, var(--lavender), #a78bfa, var(--blue));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -0.5px;
+  animation: splashFadeUp 1s 0.3s ease both;
+}
+.splash-sub {
+  font-size: 14px;
+  color: var(--text-muted);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  animation: splashFadeUp 1s 0.5s ease both;
+}
+@keyframes splashPulse {
+  0% { opacity: 0; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1.02); }
+  100% { transform: scale(1); }
+}
+@keyframes splashFloat {
+  0% { transform: translateY(10px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+@keyframes splashFadeUp {
+  0% { opacity: 0; transform: translateY(12px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+/* ═══════════════════════════════════════════════════
+   VIEWS — each section is a "view" toggled by JS
+   ═══════════════════════════════════════════════════ */
+.view { display: none; min-height: 100vh; }
+.view.active { display: flex; flex-direction: column; }
+
+/* ═══════════════════════════════════════════════════
+   AUTH VIEWS (login / register)
+   ═══════════════════════════════════════════════════ */
+.auth-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.auth-panel-left {
+  background: linear-gradient(160deg, #0f0c29 0%, #1a1040 40%, #24243e 100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 64px 56px;
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-panel-left::before {
+  content: '';
+  position: absolute;
+  top: -120px; right: -120px;
+  width: 400px; height: 400px;
+  background: radial-gradient(circle, rgba(139,124,246,0.08) 0%, transparent 70%);
+  border-radius: 50%;
+}
+.auth-panel-left::after {
+  content: '';
+  position: absolute;
+  bottom: -100px; left: -100px;
+  width: 350px; height: 350px;
+  background: radial-gradient(circle, rgba(99,102,241,0.06) 0%, transparent 70%);
+  border-radius: 50%;
+}
+
+.auth-brand { position: relative; z-index: 1; }
+
+.auth-brand-logo {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 44px;
+}
+
+.brand-icon {
+  width: 48px; height: 48px;
+  background: linear-gradient(135deg, var(--lavender), var(--indigo));
+  border-radius: 13px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px;
+  box-shadow: 0 0 30px rgba(139,124,246,0.3);
+}
+
+.brand-name {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--white);
+  letter-spacing: -0.5px;
+}
+
+.auth-tagline {
+  font-family: var(--font-display);
+  font-size: 38px;
+  font-weight: 700;
+  color: var(--white);
+  line-height: 1.15;
+  margin-bottom: 18px;
+}
+
+.auth-tagline em {
+  background: linear-gradient(90deg, var(--lavender), #a78bfa);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-style: normal;
+}
+
+.auth-desc {
+  color: var(--text-secondary);
+  font-size: 15px;
+  max-width: 380px;
+  margin-bottom: 44px;
+  line-height: 1.7;
+}
+
+.auth-features {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.auth-feature {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.feature-dot {
+  width: 8px; height: 8px;
+  background: var(--lavender);
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 0 8px rgba(139,124,246,0.4);
+}
+
+/* ── NOTICE BAR ── */
+.dev-notice {
+  background: var(--lavender-pale);
+  border: 1px solid rgba(139,124,246,0.2);
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 12px;
+  color: var(--lavender);
+  font-family: var(--mono);
+  margin-top: 44px;
+  max-width: 380px;
+  position: relative;
+  z-index: 1;
+  line-height: 1.8;
+}
+
+.auth-panel-right {
+  background: var(--bg-darkest);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 48px 56px;
+}
+
+.auth-form-wrap {
+  width: 100%;
+  max-width: 400px;
+}
+
+.auth-form-title {
+  font-family: var(--font-display);
+  font-size: 30px;
+  font-weight: 700;
+  color: var(--white);
+  margin-bottom: 6px;
+}
+
+.auth-form-sub {
+  color: var(--text-secondary);
+  font-size: 14px;
+  margin-bottom: 32px;
+}
+
+.auth-form-sub a {
+  color: var(--lavender);
+  text-decoration: none;
+  font-weight: 600;
+  cursor: pointer;
+}
+.auth-form-sub a:hover { text-decoration: underline; }
+
+/* ═══════════════════════════════════════════════════
+   FORM ELEMENTS
+   ═══════════════════════════════════════════════════ */
+.form-group { margin-bottom: 18px; }
+
+.form-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+  letter-spacing: 0.3px;
+}
+
+.form-label .required { color: var(--red); margin-left: 3px; }
+
+.form-input, .form-select, .form-textarea {
+  width: 100%;
+  padding: 11px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 14px;
+  font-family: var(--font);
+  color: var(--text);
+  background: var(--bg-input);
+  transition: border-color 0.2s, box-shadow 0.2s;
+  outline: none;
+}
+
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+  border-color: var(--lavender);
+  box-shadow: 0 0 0 3px var(--lavender-pale);
+}
+
+.form-input.error, .form-select.error, .form-textarea.error {
+  border-color: var(--red);
+  box-shadow: 0 0 0 3px var(--red-pale);
+}
+
+.form-input::placeholder, .form-textarea::placeholder {
+  color: var(--text-dim);
+}
+
+.form-textarea { resize: vertical; min-height: 88px; }
+
+.form-select {
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%235f6577' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
+}
+
+.form-hint { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+.form-error { font-size: 12px; color: var(--red); margin-top: 4px; display: none; }
+.form-error.visible { display: block; }
+
+/* ═══════════════════════════════════════════════════
+   BUTTONS
+   ═══════════════════════════════════════════════════ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 11px 20px;
+  border-radius: var(--radius);
+  font-size: 14px;
+  font-weight: 600;
+  font-family: var(--font);
+  cursor: pointer;
+  border: 1.5px solid transparent;
+  transition: all 0.18s ease;
+  text-decoration: none;
+  white-space: nowrap;
+  user-select: none;
+}
+.btn:active { transform: translateY(1px); }
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--lavender), var(--indigo));
+  color: var(--white);
+  border-color: transparent;
+  box-shadow: 0 2px 12px rgba(139,124,246,0.25);
+}
+.btn-primary:hover {
+  box-shadow: 0 4px 20px rgba(139,124,246,0.4);
+  transform: translateY(-1px);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text-secondary);
+  border-color: var(--border);
+}
+.btn-ghost:hover { background: var(--bg-hover); color: var(--text); }
+
+.btn-danger {
+  background: var(--red-pale);
+  color: var(--red);
+  border-color: rgba(248,113,113,0.2);
+}
+.btn-danger:hover { background: rgba(248,113,113,0.2); }
+
+.btn-success {
+  background: var(--green-pale);
+  color: var(--green);
+  border-color: rgba(52,211,153,0.2);
+}
+
+.btn-sm { padding: 7px 13px; font-size: 13px; }
+.btn-lg { padding: 13px 28px; font-size: 15px; }
+.btn-block { width: 100%; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn:disabled:active { transform: none; }
+
+/* ═══════════════════════════════════════════════════
+   APP SHELL (post-auth)
+   ═══════════════════════════════════════════════════ */
+.app-shell {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  grid-template-rows: 60px 1fr;
+  min-height: 100vh;
+}
+
+/* ── TOPBAR ── */
+.topbar {
+  grid-column: 1 / -1;
+  background: var(--bg-dark);
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  gap: 16px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  border-bottom: 1px solid var(--border);
+}
+
+.topbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+}
+
+.topbar-logo {
+  width: 34px; height: 34px;
+  background: linear-gradient(135deg, var(--lavender), var(--indigo));
+  border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+  box-shadow: 0 0 16px rgba(139,124,246,0.25);
+}
+
+.topbar-name {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--white);
+  letter-spacing: -0.3px;
+}
+
+.topbar-spacer { flex: 1; }
+
+.topbar-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.topbar-avatar {
+  width: 34px; height: 34px;
+  background: linear-gradient(135deg, var(--lavender), var(--indigo));
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--white);
+}
+
+.topbar-username {
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* ── SIDEBAR ── */
+.sidebar {
+  background: var(--bg-dark);
+  padding: 20px 0;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+}
+
+.sidebar-section { padding: 0 12px; margin-bottom: 24px; }
+
+.sidebar-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  padding: 0 12px;
+  margin-bottom: 8px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all 0.15s;
+  color: var(--text-secondary);
+  font-size: 14px;
+  text-decoration: none;
+  border: none;
+  background: none;
+  width: 100%;
+  font-family: var(--font);
+  font-weight: 500;
+}
+.nav-item:hover { background: var(--bg-hover); color: var(--text); }
+.nav-item.active {
+  background: var(--lavender-pale);
+  color: var(--lavender);
+  font-weight: 600;
+}
+.nav-item.active .nav-icon { color: var(--lavender); }
+
+.nav-icon {
+  font-size: 16px;
+  width: 22px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.nav-badge {
+  margin-left: auto;
+  background: var(--lavender);
+  color: var(--white);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: 20px;
+  min-width: 20px;
+  text-align: center;
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  padding: 0 12px;
+}
+
+/* ── MAIN CONTENT ── */
+.main-content {
+  background: var(--bg-darkest);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.page { display: none; padding: 32px 36px; flex: 1; }
+.page.active { display: block; }
+
+/* ── PAGE HEADER ── */
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 28px;
+  gap: 16px;
+}
+
+.page-title {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--white);
+  line-height: 1.2;
+}
+
+.page-subtitle {
+  color: var(--text-secondary);
+  font-size: 14px;
+  margin-top: 4px;
+}
+
+.page-actions { display: flex; gap: 10px; flex-shrink: 0; }
+
+/* ═══════════════════════════════════════════════════
+   CARDS & PANELS
+   ═══════════════════════════════════════════════════ */
+.card {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+}
+
+.card-header {
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.card-title {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.card-body { padding: 22px; }
+
+/* ═══════════════════════════════════════════════════
+   STATS GRID (dashboard)
+   ═══════════════════════════════════════════════════ */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-glow); }
+
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+}
+
+.stat-card.lavender::before { background: linear-gradient(90deg, var(--lavender), var(--indigo)); }
+.stat-card.blue::before     { background: var(--blue); }
+.stat-card.green::before    { background: var(--green); }
+.stat-card.amber::before    { background: var(--amber); }
+
+.stat-icon { font-size: 28px; margin-bottom: 10px; }
+.stat-value {
+  font-family: var(--mono);
+  font-size: 32px;
+  font-weight: 600;
+  color: var(--white);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.stat-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ═══════════════════════════════════════════════════
+   TABLE
+   ═══════════════════════════════════════════════════ */
+.table-wrap {
+  overflow-x: auto;
+  border-radius: var(--radius-lg);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+thead tr { background: var(--bg-elevated); }
+
+thead th {
+  padding: 12px 16px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+tbody tr {
+  border-bottom: 1px solid var(--border);
+  transition: background 0.12s;
+}
+tbody tr:last-child { border-bottom: none; }
+tbody tr:hover { background: var(--bg-hover); }
+
+tbody td {
+  padding: 13px 16px;
+  color: var(--text-secondary);
+  vertical-align: middle;
+}
+
+.td-mono { font-family: var(--mono); font-size: 13px; }
+
+/* ── BADGES ── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.badge-lavender { background: var(--lavender-pale); color: var(--lavender); }
+.badge-green    { background: var(--green-pale);    color: var(--green); }
+.badge-blue     { background: var(--blue-pale);     color: var(--blue); }
+.badge-red      { background: var(--red-pale);      color: var(--red); }
+.badge-amber    { background: var(--amber-pale);    color: var(--amber); }
+.badge-teal     { background: var(--teal-pale);     color: var(--teal); }
+.badge-grey     { background: rgba(95,101,119,0.15); color: var(--text-muted); }
+
+/* ═══════════════════════════════════════════════════
+   BAR CHART
+   ═══════════════════════════════════════════════════ */
+.bar-chart { display: flex; flex-direction: column; gap: 12px; }
+
+.bar-row {
+  display: grid;
+  grid-template-columns: 80px 1fr 60px;
+  align-items: center;
+  gap: 12px;
+}
+
+.bar-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+  text-align: right;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bar-track {
+  background: var(--bg-elevated);
+  border-radius: 6px;
+  height: 24px;
+  overflow: hidden;
+}
+
+.bar-fill {
+  height: 100%;
+  border-radius: 6px;
+  background: linear-gradient(90deg, var(--lavender), var(--indigo));
+  transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  display: flex;
+  align-items: center;
+  min-width: 4px;
+}
+
+.bar-value {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--text-secondary);
+  text-align: right;
+}
+
+/* ═══════════════════════════════════════════════════
+   MODAL
+   ═══════════════════════════════════════════════════ */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.65);
+  z-index: 200;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(6px);
+  animation: fadeIn 0.15s ease;
+}
+.modal-backdrop.open { display: flex; }
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+.modal {
+  background: var(--bg-card);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border);
+  width: 100%;
+  max-width: 500px;
+  margin: 20px;
+  box-shadow: var(--shadow-lg);
+  animation: slideUp 0.2s ease;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-header {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.modal-title {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--white);
+}
+
+.modal-close {
+  width: 32px; height: 32px;
+  border: none;
+  background: var(--bg-elevated);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-muted);
+  transition: all 0.15s;
+}
+.modal-close:hover { background: var(--bg-hover); color: var(--text); }
+
+.modal-body { padding: 24px; }
+
+.modal-footer {
+  padding: 16px 24px 20px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  border-top: 1px solid var(--border);
+}
+
+/* ═══════════════════════════════════════════════════
+   TOAST NOTIFICATIONS
+   ═══════════════════════════════════════════════════ */
+.toast-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.toast {
+  background: var(--bg-elevated);
+  color: var(--text);
+  padding: 13px 18px;
+  border-radius: var(--radius);
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: var(--shadow-lg);
+  animation: toastIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  pointer-events: all;
+  max-width: 340px;
+  border-left: 4px solid var(--lavender);
+}
+.toast.success { border-left-color: var(--green); }
+.toast.error   { border-left-color: var(--red); }
+
+@keyframes toastIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+@keyframes toastOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(110%); opacity: 0; } }
+
+/* ═══════════════════════════════════════════════════
+   EMPTY STATE
+   ═══════════════════════════════════════════════════ */
+.empty-state {
+  text-align: center;
+  padding: 60px 40px;
+  color: var(--text-secondary);
+}
+.empty-icon { font-size: 48px; margin-bottom: 16px; }
+.empty-title { font-family: var(--font-display); font-size: 20px; color: var(--white); margin-bottom: 8px; font-weight: 600; }
+.empty-desc { font-size: 14px; margin-bottom: 24px; color: var(--text-secondary); }
+
+/* ═══════════════════════════════════════════════════
+   CONFIRM DIALOG
+   ═══════════════════════════════════════════════════ */
+.confirm-modal .modal { max-width: 380px; }
+
+/* ═══════════════════════════════════════════════════
+   DASHBOARD GRID
+   ═══════════════════════════════════════════════════ */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-top: 20px;
+}
+.dashboard-grid .span2 { grid-column: span 2; }
+
+/* ═══════════════════════════════════════════════════
+   RECENT ACTIVITY LIST
+   ═══════════════════════════════════════════════════ */
+.activity-list { display: flex; flex-direction: column; gap: 0; }
+
+.activity-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+.activity-item:last-child { border-bottom: none; }
+
+.activity-dot {
+  width: 38px; height: 38px;
+  border-radius: 10px;
+  background: var(--lavender-pale);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.activity-text { flex: 1; }
+.activity-title { font-size: 14px; font-weight: 600; color: var(--text); }
+.activity-meta { font-size: 12px; color: var(--text-secondary); }
+.activity-time { font-size: 12px; color: var(--text-muted); font-family: var(--mono); }
+
+/* ═══════════════════════════════════════════════════
+   FILTER BAR
+   ═══════════════════════════════════════════════════ */
+.filter-bar {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.search-input-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 200px;
+}
+.search-icon {
+  position: absolute;
+  left: 12px; top: 50%;
+  transform: translateY(-50%);
+  font-size: 14px;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+.search-input {
+  width: 100%;
+  padding: 9px 12px 9px 36px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 14px;
+  font-family: var(--font);
+  outline: none;
+  transition: border-color 0.2s;
+  background: var(--bg-input);
+  color: var(--text);
+}
+.search-input:focus { border-color: var(--lavender); }
+.search-input::placeholder { color: var(--text-dim); }
+
+/* ═══════════════════════════════════════════════════
+   SETTINGS PAGE
+   ═══════════════════════════════════════════════════ */
+.settings-grid {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 24px;
+}
+.settings-nav { display: flex; flex-direction: column; gap: 4px; }
+.settings-nav-item {
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  font-size: 14px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: all 0.15s;
+  font-weight: 500;
+  border: none;
+  background: none;
+  text-align: left;
+  font-family: var(--font);
+}
+.settings-nav-item:hover { background: var(--bg-hover); color: var(--text); }
+.settings-nav-item.active { background: var(--lavender-pale); color: var(--lavender); }
+
+/* ═══════════════════════════════════════════════════
+   DEV INFO PANEL
+   ═══════════════════════════════════════════════════ */
+.dev-panel {
+  background: var(--bg-card);
+  color: var(--text);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+.dev-panel-header {
+  background: var(--lavender-pale);
+  border-bottom: 1px solid rgba(139,124,246,0.15);
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.dev-panel-title {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--lavender);
+  letter-spacing: 0.8px;
+}
+.dev-panel-body {
+  padding: 12px 14px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.9;
+}
+.dev-panel-body .key { color: var(--lavender); }
+.dev-panel-body .val { color: var(--green); }
+.dev-panel-body .comment { color: var(--text-dim); }
+
+/* ═══════════════════════════════════════════════════
+   PROGRESS / GOAL SECTION
+   ═══════════════════════════════════════════════════ */
+.goal-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  margin-bottom: 16px;
+  transition: all 0.2s;
+}
+.goal-card:hover { border-color: var(--border-light); }
+
+.goal-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  font-size: 13px;
+}
+
+.goal-bar-track {
+  background: var(--bg-elevated);
+  border-radius: 8px;
+  height: 12px;
+  overflow: hidden;
+}
+
+.goal-bar-fill {
+  height: 100%;
+  border-radius: 8px;
+  background: linear-gradient(90deg, var(--lavender), var(--indigo));
+  transition: width 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.goal-bar-fill.achieved {
+  background: linear-gradient(90deg, var(--green), var(--teal));
+}
+
+/* ── Progressive step indicator ── */
+.step-indicator {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 10px;
+}
+.step-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--bg-elevated);
+  transition: all 0.3s;
+}
+.step-dot.complete { background: var(--green); box-shadow: 0 0 6px rgba(52,211,153,0.4); }
+.step-dot.current { background: var(--lavender); box-shadow: 0 0 6px rgba(139,124,246,0.4); }
+
+/* ═══════════════════════════════════════════════════
+   SLEEP QUALITY SELECTOR (mood)
+   ═══════════════════════════════════════════════════ */
+.quality-selector {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+.quality-option {
+  flex: 1;
+  padding: 10px 6px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-input);
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.15s;
+  font-size: 20px;
+  line-height: 1;
+}
+.quality-option:hover { border-color: var(--border-light); background: var(--bg-hover); }
+.quality-option.selected {
+  border-color: var(--lavender);
+  background: var(--lavender-pale);
+  box-shadow: 0 0 0 3px var(--lavender-pale);
+}
+.quality-label {
+  display: block;
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-top: 4px;
+  font-weight: 500;
+}
+
+/* ═══════════════════════════════════════════════════
+   WEEKLY OVERVIEW CHART (CSS-only)
+   ═══════════════════════════════════════════════════ */
+.week-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  height: 140px;
+  padding-top: 10px;
+}
+.week-bar-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+  justify-content: flex-end;
+  gap: 6px;
+}
+.week-bar-container {
+  width: 100%;
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.week-bar {
+  width: 80%;
+  max-width: 40px;
+  border-radius: 6px 6px 3px 3px;
+  background: linear-gradient(180deg, var(--lavender), var(--indigo));
+  transition: height 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  min-height: 2px;
+  position: relative;
+}
+.week-bar.today {
+  background: linear-gradient(180deg, var(--amber), var(--amber-dark));
+  box-shadow: 0 0 10px rgba(246,197,88,0.3);
+}
+.week-bar-val {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+.week-bar-day {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+}
+.week-bar-day.today-label { color: var(--amber); }
+
+/* ═══════════════════════════════════════════════════
+   ACHIEVEMENT CHIP
+   ═══════════════════════════════════════════════════ */
+.achievement {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--amber-pale);
+  color: var(--amber);
+  border: 1px solid rgba(246,197,88,0.2);
+}
+
+/* ═══════════════════════════════════════════════════
+   PASSWORD STRENGTH INDICATOR
+   ═══════════════════════════════════════════════════ */
+.pw-strength { display: flex; gap: 4px; margin-top: 6px; }
+.pw-bar { height: 4px; flex: 1; border-radius: 2px; background: var(--bg-elevated); transition: background 0.2s; }
+.pw-bar.weak   { background: var(--red); }
+.pw-bar.medium { background: var(--amber); }
+.pw-bar.strong { background: var(--green); }
+.pw-label { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+
+/* ═══════════════════════════════════════════════════
+   RESPONSIVE & UTILITY
+   ═══════════════════════════════════════════════════ */
+.row { display: flex; gap: 16px; align-items: flex-start; }
+.col { flex: 1; }
+.col-2 { flex: 2; }
+
+.text-sm   { font-size: 13px; }
+.text-xs   { font-size: 12px; }
+.text-soft { color: var(--text-secondary); }
+.text-muted { color: var(--text-muted); }
+.text-lavender { color: var(--lavender); }
+.text-green{ color: var(--green); }
+.text-red  { color: var(--red); }
+.text-amber{ color: var(--amber); }
+.text-mono { font-family: var(--mono); }
+.bold      { font-weight: 600; }
+.mt-1      { margin-top: 8px; }
+.mt-2      { margin-top: 16px; }
+.mt-3      { margin-top: 24px; }
+.mb-1      { margin-bottom: 8px; }
+.mb-2      { margin-bottom: 16px; }
+.divider   { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+.flex-center { display: flex; align-items: center; gap: 8px; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
+
+*:focus-visible {
+  outline: 2px solid var(--lavender);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+
+/* ── Onboarding highlight ── */
+.gentle-callout {
+  background: linear-gradient(135deg, var(--lavender-pale), var(--indigo-pale));
+  border: 1px solid rgba(139,124,246,0.2);
+  border-radius: var(--radius-lg);
+  padding: 18px 20px;
+  margin-bottom: 20px;
+}
+.gentle-callout p { color: var(--text-secondary); font-size: 14px; line-height: 1.6; }
+.gentle-callout strong { color: var(--lavender); }
+
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════
+     SPLASH SCREEN
+     ══════════════════════════════════════════════════════ -->
+<div id="splashScreen">
+  <div class="splash-content">
+    <div class="splash-logo">🌙</div>
+    <div class="splash-text">Snoozr</div>
+    <div class="splash-sub">Sleep better, step by step</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     TOAST CONTAINER
+     ══════════════════════════════════════════════════════ -->
+<div class="toast-container" id="toastContainer" aria-live="polite" aria-label="Notifications"></div>
+
+<!-- ══════════════════════════════════════════════════════
+     CONFIRM MODAL
+     ══════════════════════════════════════════════════════ -->
+<div class="modal-backdrop confirm-modal" id="confirmModal" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-header">
+      <span class="modal-title" id="confirmTitle">Confirm Action</span>
+      <button class="modal-close" onclick="closeConfirm()" aria-label="Close">✕</button>
+    </div>
+    <div class="modal-body">
+      <p id="confirmMessage" style="font-size:15px;color:var(--text-secondary)">Are you sure?</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeConfirm()">Cancel</button>
+      <button class="btn btn-danger" id="confirmOkBtn">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     VIEW: LOGIN
+     ══════════════════════════════════════════════════════ -->
+<div class="view active" id="view-login">
+  <div class="auth-shell">
+    <div class="auth-panel-left">
+      <div class="auth-brand">
+        <div class="auth-brand-logo">
+          <div class="brand-icon">🌙</div>
+          <span class="brand-name">Snoozr</span>
+        </div>
+        <div class="auth-tagline">Sleep better.<br><em>No pressure.</em></div>
+        <p class="auth-desc">A gentle, step-by-step sleep tracker designed for students. Track your sleep, set reachable goals, and build better habits — without the anxiety of chasing perfect data.</p>
+        <div class="auth-features">
+          <div class="auth-feature"><span class="feature-dot"></span>Log sleep sessions with bedtime & duration</div>
+          <div class="auth-feature"><span class="feature-dot"></span>Progressive goals that adapt to your pace</div>
+          <div class="auth-feature"><span class="feature-dot"></span>Weekly trends & gentle achievement rewards</div>
+          <div class="auth-feature"><span class="feature-dot"></span>Built to reduce Orthosomnia — not cause it</div>
+        </div>
+        <div class="dev-notice">
+          ⚙ HSC Task #2 Prototype — Snoozr<br>
+          Passwords: simulated bcrypt hash<br>
+          Data: localStorage (client-side)<br>
+          Demo: demo@student.edu / Demo1234!
+        </div>
+      </div>
+    </div>
+    <div class="auth-panel-right">
+      <div class="auth-form-wrap">
+        <h1 class="auth-form-title">Welcome back</h1>
+        <p class="auth-form-sub">Don't have an account? <a onclick="showView('view-register')">Create one</a></p>
+        <form id="loginForm" onsubmit="handleLogin(event)" novalidate>
+          <div class="form-group">
+            <label class="form-label" for="loginEmail">Email address <span class="required" aria-hidden="true">*</span></label>
+            <input class="form-input" type="email" id="loginEmail" name="email"
+              autocomplete="email" placeholder="you@example.com"
+              aria-required="true" aria-describedby="loginEmailErr">
+            <span class="form-error" id="loginEmailErr" role="alert"></span>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="loginPassword">Password <span class="required" aria-hidden="true">*</span></label>
+            <input class="form-input" type="password" id="loginPassword" name="password"
+              autocomplete="current-password" placeholder="Enter your password"
+              aria-required="true" aria-describedby="loginPasswordErr">
+            <span class="form-error" id="loginPasswordErr" role="alert"></span>
+          </div>
+          <div id="loginGlobalErr" class="form-error" role="alert" style="margin-bottom:12px"></div>
+          <button type="submit" class="btn btn-primary btn-lg btn-block">Sign In</button>
+        </form>
+        <p style="text-align:center;margin-top:16px">
+          <a onclick="fillDemo()" style="font-size:13px;color:var(--text-muted);cursor:pointer;text-decoration:underline">Use demo account</a>
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     VIEW: REGISTER
+     ══════════════════════════════════════════════════════ -->
+<div class="view" id="view-register">
+  <div class="auth-shell">
+    <div class="auth-panel-left">
+      <div class="auth-brand">
+        <div class="auth-brand-logo">
+          <div class="brand-icon">🌙</div>
+          <span class="brand-name">Snoozr</span>
+        </div>
+        <div class="auth-tagline">Better sleep<br><em>starts tonight.</em></div>
+        <p class="auth-desc">Join Snoozr and start your journey to better sleep with manageable, stress-free goals. No judgement, no obsessing — just progress.</p>
+        <div class="auth-features">
+          <div class="auth-feature"><span class="feature-dot"></span>Designed to fight Orthosomnia</div>
+          <div class="auth-feature"><span class="feature-dot"></span>Rewards small, consistent improvements</div>
+          <div class="auth-feature"><span class="feature-dot"></span>Your data stays local and private</div>
+        </div>
+      </div>
+    </div>
+    <div class="auth-panel-right">
+      <div class="auth-form-wrap">
+        <h1 class="auth-form-title">Create account</h1>
+        <p class="auth-form-sub">Already have an account? <a onclick="showView('view-login')">Sign in</a></p>
+        <form id="registerForm" onsubmit="handleRegister(event)" novalidate>
+          <div class="row">
+            <div class="col form-group">
+              <label class="form-label" for="regFirstName">First name <span class="required" aria-hidden="true">*</span></label>
+              <input class="form-input" type="text" id="regFirstName" autocomplete="given-name"
+                placeholder="Jane" aria-required="true" aria-describedby="regFirstNameErr">
+              <span class="form-error" id="regFirstNameErr" role="alert"></span>
+            </div>
+            <div class="col form-group">
+              <label class="form-label" for="regLastName">Last name <span class="required" aria-hidden="true">*</span></label>
+              <input class="form-input" type="text" id="regLastName" autocomplete="family-name"
+                placeholder="Smith" aria-required="true" aria-describedby="regLastNameErr">
+              <span class="form-error" id="regLastNameErr" role="alert"></span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="regEmail">Email address <span class="required" aria-hidden="true">*</span></label>
+            <input class="form-input" type="email" id="regEmail" autocomplete="email"
+              placeholder="you@example.com" aria-required="true" aria-describedby="regEmailErr">
+            <span class="form-error" id="regEmailErr" role="alert"></span>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="regSchool">School / University <span class="text-soft text-xs">(optional)</span></label>
+            <input class="form-input" type="text" id="regSchool"
+              placeholder="e.g. North Sydney Boys High">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="regPassword">Password <span class="required" aria-hidden="true">*</span></label>
+            <input class="form-input" type="password" id="regPassword"
+              autocomplete="new-password" placeholder="Min. 8 characters"
+              aria-required="true" aria-describedby="regPasswordErr regPasswordHint"
+              oninput="checkPasswordStrength(this.value)">
+            <div class="pw-strength" id="pwStrengthBars" aria-hidden="true">
+              <div class="pw-bar" id="pwBar1"></div>
+              <div class="pw-bar" id="pwBar2"></div>
+              <div class="pw-bar" id="pwBar3"></div>
+              <div class="pw-bar" id="pwBar4"></div>
+            </div>
+            <div class="pw-label" id="pwStrengthLabel"></div>
+            <span class="form-error" id="regPasswordErr" role="alert"></span>
+            <span class="form-hint" id="regPasswordHint">Must be at least 8 characters with one number.</span>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="regConfirm">Confirm password <span class="required" aria-hidden="true">*</span></label>
+            <input class="form-input" type="password" id="regConfirm"
+              autocomplete="new-password" placeholder="Repeat your password"
+              aria-required="true" aria-describedby="regConfirmErr">
+            <span class="form-error" id="regConfirmErr" role="alert"></span>
+          </div>
+          <div id="regGlobalErr" class="form-error" role="alert" style="margin-bottom:12px"></div>
+          <button type="submit" class="btn btn-primary btn-lg btn-block">Create Account</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     VIEW: APP (post-auth)
+     ══════════════════════════════════════════════════════ -->
+<div class="view" id="view-app">
+  <div class="app-shell">
+
+    <!-- TOPBAR -->
+    <header class="topbar" role="banner">
+      <div class="topbar-brand" aria-label="Snoozr home">
+        <div class="topbar-logo" aria-hidden="true">🌙</div>
+        <span class="topbar-name">Snoozr</span>
+      </div>
+      <div class="topbar-spacer"></div>
+      <nav class="topbar-user" aria-label="User menu">
+        <div class="topbar-avatar" id="topbarAvatar" aria-hidden="true">J</div>
+        <span class="topbar-username" id="topbarUsername">Loading...</span>
+        <button class="btn btn-ghost btn-sm" onclick="handleLogout()"
+          style="color:var(--text-muted);border-color:var(--border);margin-left:8px"
+          aria-label="Sign out">Sign out</button>
+      </nav>
+    </header>
+
+    <!-- SIDEBAR -->
+    <nav class="sidebar" role="navigation" aria-label="Main navigation">
+      <div class="sidebar-section">
+        <div class="sidebar-label">Main</div>
+        <button class="nav-item active" onclick="showPage('dashboard')" data-page="dashboard" aria-current="page">
+          <span class="nav-icon" aria-hidden="true">🏠</span> Dashboard
+        </button>
+        <button class="nav-item" onclick="showPage('sessions')" data-page="sessions">
+          <span class="nav-icon" aria-hidden="true">😴</span> Sleep Log
+          <span class="nav-badge" id="sessionsBadge">0</span>
+        </button>
+        <button class="nav-item" onclick="showPage('goals')" data-page="goals">
+          <span class="nav-icon" aria-hidden="true">🎯</span> Goals
+        </button>
+        <button class="nav-item" onclick="showPage('insights')" data-page="insights">
+          <span class="nav-icon" aria-hidden="true">💡</span> Insights
+        </button>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-label">Account</div>
+        <button class="nav-item" onclick="showPage('settings')" data-page="settings">
+          <span class="nav-icon" aria-hidden="true">⚙</span> Settings
+        </button>
+      </div>
+      <div class="sidebar-footer">
+        <div class="dev-panel">
+          <div class="dev-panel-header">
+            <span style="font-size:14px">⚙</span>
+            <span class="dev-panel-title">DEV INFO</span>
+          </div>
+          <div class="dev-panel-body">
+            <span class="comment">// HSC Task #2 Data Store</span><br>
+            <span class="key">storage:</span> <span class="val">"localStorage"</span><br>
+            <span class="key">auth:</span> <span class="val">"simulated bcrypt"</span><br>
+            <span class="key">entries:</span> <span class="val" id="devEntryCount">0</span><br>
+            <span class="key">user_id:</span> <span class="val" id="devUserId">-</span><br>
+            <span class="comment">// Replace with real DB + Flask</span>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <!-- MAIN -->
+    <main class="main-content" role="main" id="mainContent">
+
+      <!-- ── PAGE: DASHBOARD ── -->
+      <div class="page active" id="page-dashboard">
+        <div class="page-header">
+          <div>
+            <h2 class="page-title" id="dashGreeting">Good evening 🌙</h2>
+            <p class="page-subtitle">Here's how your sleep is looking this week.</p>
+          </div>
+          <div class="page-actions">
+            <button class="btn btn-primary" onclick="openAddModal()">
+              <span aria-hidden="true">＋</span> Log Sleep
+            </button>
+          </div>
+        </div>
+
+        <div class="stats-grid" role="region" aria-label="Sleep statistics">
+          <div class="stat-card lavender">
+            <div class="stat-icon" aria-hidden="true">🛏</div>
+            <div class="stat-value" id="statWeekAvg">—</div>
+            <div class="stat-label">Avg. hours this week</div>
+          </div>
+          <div class="stat-card blue">
+            <div class="stat-icon" aria-hidden="true">📊</div>
+            <div class="stat-value" id="statTotalEntries">0</div>
+            <div class="stat-label">Total entries</div>
+          </div>
+          <div class="stat-card green">
+            <div class="stat-icon" aria-hidden="true">🎯</div>
+            <div class="stat-value" id="statGoalPct">—</div>
+            <div class="stat-label">Goal progress</div>
+          </div>
+          <div class="stat-card amber">
+            <div class="stat-icon" aria-hidden="true">🔥</div>
+            <div class="stat-value" id="statStreak">0</div>
+            <div class="stat-label">Day streak</div>
+          </div>
+        </div>
+
+        <div id="dashAchievements" style="margin-bottom:16px"></div>
+
+        <div class="dashboard-grid">
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">This Week</span>
+            </div>
+            <div class="card-body" id="weekChartWrap">
+              <div class="empty-state" style="padding:20px">
+                <div class="empty-icon">📊</div>
+                <div class="empty-desc text-sm">Log some sleep to see your week.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">Recent Entries</span>
+              <button class="btn btn-ghost btn-sm" onclick="showPage('sessions')">View all</button>
+            </div>
+            <div class="card-body" style="padding:0 22px">
+              <div class="activity-list" id="recentActivityList">
+                <div class="empty-state" style="padding:30px">
+                  <div class="empty-icon">😴</div>
+                  <div class="empty-desc text-sm">No entries yet.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card span2">
+            <div class="card-header">
+              <span class="card-title">Sleep by Day of Week (All Time)</span>
+            </div>
+            <div class="card-body" id="barChartWrap">
+              <div class="empty-state" style="padding:20px">
+                <div class="empty-icon">📈</div>
+                <div class="empty-desc text-sm">Add more entries to see patterns.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── PAGE: SLEEP LOG (Full CRUD table) ── -->
+      <div class="page" id="page-sessions">
+        <div class="page-header">
+          <div>
+            <h2 class="page-title">Sleep Log</h2>
+            <p class="page-subtitle">A log of every night you've recorded. Create, edit, and delete entries below.</p>
+          </div>
+          <div class="page-actions">
+            <button class="btn btn-primary" onclick="openAddModal()">
+              <span aria-hidden="true">＋</span> Log Sleep
+            </button>
+          </div>
+        </div>
+
+        <div class="filter-bar">
+          <div class="search-input-wrap">
+            <span class="search-icon" aria-hidden="true">🔍</span>
+            <input type="search" class="search-input" id="sessionSearch"
+              placeholder="Search by notes…" aria-label="Search sleep entries"
+              oninput="renderSessionsTable()">
+          </div>
+          <select class="form-select" id="sessionFilterQuality" onchange="renderSessionsTable()"
+            style="width:180px" aria-label="Filter by quality">
+            <option value="">All qualities</option>
+            <option value="great">Great</option>
+            <option value="good">Good</option>
+            <option value="okay">Okay</option>
+            <option value="poor">Poor</option>
+            <option value="terrible">Terrible</option>
+          </select>
+          <select class="form-select" id="sessionSort" onchange="renderSessionsTable()"
+            style="width:160px" aria-label="Sort entries">
+            <option value="newest">Newest first</option>
+            <option value="oldest">Oldest first</option>
+            <option value="duration-desc">Longest first</option>
+            <option value="duration-asc">Shortest first</option>
+          </select>
+        </div>
+
+        <div class="card">
+          <div class="table-wrap">
+            <table role="grid" aria-label="Sleep entries">
+              <thead>
+                <tr>
+                  <th scope="col">Date</th>
+                  <th scope="col">Bedtime</th>
+                  <th scope="col">Wake Time</th>
+                  <th scope="col">Duration</th>
+                  <th scope="col">Quality</th>
+                  <th scope="col">Notes</th>
+                  <th scope="col" style="text-align:right">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="sessionsTableBody">
+                <tr><td colspan="7">
+                  <div class="empty-state">
+                    <div class="empty-icon">😴</div>
+                    <div class="empty-title">No sleep entries yet</div>
+                    <div class="empty-desc">Click "Log Sleep" to add your first entry.</div>
+                    <button class="btn btn-primary" onclick="openAddModal()">＋ Log Sleep</button>
+                  </div>
+                </td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div style="padding:12px 18px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+            <span class="text-xs text-soft" id="sessionsCount">0 entries</span>
+            <span class="text-xs text-muted text-mono" id="sqlQueryHint">
+              SELECT * FROM sleep_entries WHERE user_id = ? ORDER BY date DESC
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── PAGE: GOALS ── -->
+      <div class="page" id="page-goals">
+        <div class="page-header">
+          <div>
+            <h2 class="page-title">Sleep Goals</h2>
+            <p class="page-subtitle">Set an end goal and let Snoozr create progressive, stress-free steps to get you there.</p>
+          </div>
+        </div>
+
+        <div class="gentle-callout">
+          <p>💜 <strong>Snoozr is different.</strong> Instead of demanding perfect sleep, we break your goal into small, manageable steps. Each step is based on your actual data — not an unrealistic ideal. Small wins build lasting habits.</p>
+        </div>
+
+        <div class="card" style="margin-bottom:20px">
+          <div class="card-header">
+            <span class="card-title">Your End Goal</span>
+            <button class="btn btn-primary btn-sm" onclick="saveGoalSettings()">💾 Save Goal</button>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col form-group">
+                <label class="form-label" for="goalType">Goal type</label>
+                <select class="form-select" id="goalType" onchange="updateGoalInputs()">
+                  <option value="duration">Total sleep hours per night</option>
+                  <option value="bedtime">Bedtime target</option>
+                </select>
+              </div>
+              <div class="col form-group" id="goalValueWrap">
+                <label class="form-label" for="goalValue">Target hours</label>
+                <input class="form-input" type="number" id="goalValue" min="5" max="12" step="0.5" value="8" placeholder="8">
+              </div>
+              <div class="col form-group">
+                <label class="form-label" for="goalSteps">Number of steps</label>
+                <select class="form-select" id="goalSteps">
+                  <option value="3">3 steps (faster)</option>
+                  <option value="5" selected>5 steps (recommended)</option>
+                  <option value="7">7 steps (gradual)</option>
+                </select>
+              </div>
+            </div>
+            <p class="text-xs text-soft mt-1">Snoozr will compare your current average to your goal and create reachable milestones.</p>
+          </div>
+        </div>
+
+        <div id="goalProgressWrap">
+          <div class="card">
+            <div class="card-body">
+              <div class="empty-state" style="padding:30px">
+                <div class="empty-icon">🎯</div>
+                <div class="empty-title">Set a goal above</div>
+                <div class="empty-desc">Log some sleep first, then set a goal to see your progressive plan.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── PAGE: INSIGHTS ── -->
+      <div class="page" id="page-insights">
+        <div class="page-header">
+          <div>
+            <h2 class="page-title">Sleep Insights</h2>
+            <p class="page-subtitle">Gentle insights from your data — no judgement, just awareness.</p>
+          </div>
+        </div>
+        <div id="insightsContent">
+          <div class="card">
+            <div class="card-body">
+              <div class="empty-state">
+                <div class="empty-icon">💡</div>
+                <div class="empty-title">Not enough data yet</div>
+                <div class="empty-desc">Log at least 5 sleep entries to unlock insights.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── PAGE: SETTINGS ── -->
+      <div class="page" id="page-settings">
+        <div class="page-header">
+          <div>
+            <h2 class="page-title">Settings</h2>
+            <p class="page-subtitle">Manage your account and data.</p>
+          </div>
+        </div>
+        <div class="settings-grid">
+          <div class="settings-nav" role="tablist" aria-label="Settings sections">
+            <button class="settings-nav-item active" onclick="showSettingsTab(this,'tab-profile')" role="tab" aria-selected="true">👤 Profile</button>
+            <button class="settings-nav-item" onclick="showSettingsTab(this,'tab-security')" role="tab" aria-selected="false">🔒 Security</button>
+            <button class="settings-nav-item" onclick="showSettingsTab(this,'tab-data')" role="tab" aria-selected="false">💾 Data & Export</button>
+            <button class="settings-nav-item" onclick="showSettingsTab(this,'tab-about')" role="tab" aria-selected="false">ℹ About</button>
+          </div>
+          <div>
+            <div id="tab-profile" class="card" role="tabpanel">
+              <div class="card-header"><span class="card-title">Profile Information</span></div>
+              <div class="card-body">
+                <div class="row">
+                  <div class="col form-group">
+                    <label class="form-label" for="setFirstName">First Name</label>
+                    <input class="form-input" type="text" id="setFirstName">
+                  </div>
+                  <div class="col form-group">
+                    <label class="form-label" for="setLastName">Last Name</label>
+                    <input class="form-input" type="text" id="setLastName">
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="setEmail">Email Address</label>
+                  <input class="form-input" type="email" id="setEmail" disabled style="opacity:0.5">
+                  <span class="form-hint">Email cannot be changed in this prototype.</span>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="setSchool">School / University</label>
+                  <input class="form-input" type="text" id="setSchool" placeholder="e.g. Kiama High School">
+                </div>
+                <button class="btn btn-primary mt-2" onclick="saveProfile()">Save Profile</button>
+              </div>
+            </div>
+
+            <div id="tab-security" class="card" role="tabpanel" style="display:none">
+              <div class="card-header"><span class="card-title">Change Password</span></div>
+              <div class="card-body">
+                <div class="form-group">
+                  <label class="form-label" for="curPassword">Current password</label>
+                  <input class="form-input" type="password" id="curPassword" autocomplete="current-password">
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="newPassword">New password</label>
+                  <input class="form-input" type="password" id="newPassword" autocomplete="new-password">
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="confPassword">Confirm new password</label>
+                  <input class="form-input" type="password" id="confPassword" autocomplete="new-password">
+                </div>
+                <div id="pwChangeMsg" class="mt-1"></div>
+                <button class="btn btn-primary mt-2" onclick="changePassword()">Update Password</button>
+              </div>
+            </div>
+
+            <div id="tab-data" class="card" role="tabpanel" style="display:none">
+              <div class="card-header"><span class="card-title">Data Management</span></div>
+              <div class="card-body">
+                <p class="text-sm text-soft mb-2">Export or manage your sleep data.</p>
+                <div style="display:flex;gap:10px;flex-wrap:wrap">
+                  <button class="btn btn-ghost" onclick="exportCSV()">📥 Export CSV</button>
+                  <button class="btn btn-ghost" onclick="viewRawData()">🗄 View Raw Data</button>
+                  <button class="btn btn-danger" onclick="clearAllData()">🗑 Delete All Data</button>
+                </div>
+              </div>
+            </div>
+
+            <div id="tab-about" class="card" role="tabpanel" style="display:none">
+              <div class="card-header"><span class="card-title">About Snoozr</span></div>
+              <div class="card-body">
+                <p class="text-sm text-soft mb-2">
+                  Snoozr is a prototype sleep tracking application designed for HSC Software Engineering Task #2. It targets high school and university students who struggle with poor sleeping habits, offering a progressive, anxiety-free alternative to apps like Sleep Cycle or Pillow that can cause Orthosomnia.
+                </p>
+                <hr class="divider">
+                <div class="dev-panel" style="margin:0">
+                  <div class="dev-panel-header">
+                    <span style="font-size:14px">⚙</span>
+                    <span class="dev-panel-title">TECHNICAL DETAILS</span>
+                  </div>
+                  <div class="dev-panel-body">
+                    <span class="key">CRUD:</span> <span class="val">Full Create, Read, Update, Delete</span><br>
+                    <span class="key">CREATE:</span> <span class="val">✓ Log Sleep modal with validation</span><br>
+                    <span class="key">READ:</span> <span class="val">✓ Dashboard, Table, Charts, Insights</span><br>
+                    <span class="key">UPDATE:</span> <span class="val">✓ Edit Sleep Entry modal</span><br>
+                    <span class="key">DELETE:</span> <span class="val">✓ Delete with confirmation dialog</span><br>
+                    <br>
+                    <span class="comment">// To-do for production backend:</span><br>
+                    <span class="comment">// - Replace localStorage with PostgreSQL</span><br>
+                    <span class="comment">// - Replace simulated hash with Flask-Bcrypt</span><br>
+                    <span class="comment">// - Add HTTPS + session token management</span><br>
+                    <span class="comment">// - Add server-side input validation</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     MODAL: ADD / EDIT SLEEP ENTRY
+     ══════════════════════════════════════════════════════ -->
+<div class="modal-backdrop" id="sessionModal" role="dialog" aria-modal="true" aria-labelledby="sessionModalTitle">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="sessionModalTitle">Log Sleep</span>
+      <button class="modal-close" onclick="closeSessionModal()" aria-label="Close dialog">✕</button>
+    </div>
+    <div class="modal-body">
+      <form id="sessionForm" onsubmit="saveSession(event)" novalidate>
+        <input type="hidden" id="sessionEditId">
+        <div class="form-group">
+          <label class="form-label" for="sessionDate">Date <span class="required" aria-hidden="true">*</span></label>
+          <input class="form-input" type="date" id="sessionDate" aria-required="true" aria-describedby="sessionDateErr">
+          <span class="form-error" id="sessionDateErr" role="alert"></span>
+        </div>
+        <div class="row">
+          <div class="col form-group">
+            <label class="form-label" for="sessionBedtime">Bedtime <span class="required" aria-hidden="true">*</span></label>
+            <input class="form-input" type="time" id="sessionBedtime" aria-required="true" aria-describedby="sessionBedtimeErr">
+            <span class="form-error" id="sessionBedtimeErr" role="alert"></span>
+          </div>
+          <div class="col form-group">
+            <label class="form-label" for="sessionWakeTime">Wake time <span class="required" aria-hidden="true">*</span></label>
+            <input class="form-input" type="time" id="sessionWakeTime" aria-required="true" aria-describedby="sessionWakeTimeErr">
+            <span class="form-error" id="sessionWakeTimeErr" role="alert"></span>
+          </div>
+        </div>
+        <div class="form-group" id="calcDurationWrap" style="display:none">
+          <div class="flex-center text-sm" style="background:var(--lavender-pale);padding:8px 12px;border-radius:var(--radius)">
+            <span>🛏 Calculated duration:</span>
+            <strong class="text-lavender" id="calcDuration">—</strong>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Sleep quality</label>
+          <div class="quality-selector" id="qualitySelector">
+            <div class="quality-option" data-val="great" onclick="selectQuality(this)">
+              😴<span class="quality-label">Great</span>
+            </div>
+            <div class="quality-option" data-val="good" onclick="selectQuality(this)">
+              🙂<span class="quality-label">Good</span>
+            </div>
+            <div class="quality-option selected" data-val="okay" onclick="selectQuality(this)">
+              😐<span class="quality-label">Okay</span>
+            </div>
+            <div class="quality-option" data-val="poor" onclick="selectQuality(this)">
+              😓<span class="quality-label">Poor</span>
+            </div>
+            <div class="quality-option" data-val="terrible" onclick="selectQuality(this)">
+              😩<span class="quality-label">Terrible</span>
+            </div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="sessionNotes">Notes <span class="text-soft text-xs">(optional)</span></label>
+          <textarea class="form-textarea" id="sessionNotes"
+            placeholder="How did you feel? Anything affecting your sleep?"
+            aria-describedby="sessionNotesHint" maxlength="400"></textarea>
+          <span class="form-hint" id="sessionNotesHint">Maximum 400 characters.</span>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeSessionModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveSession(event)" id="sessionSaveBtn">Log Sleep</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     RAW DATA MODAL
+     ══════════════════════════════════════════════════════ -->
+<div class="modal-backdrop" id="rawDataModal" role="dialog" aria-modal="true" aria-labelledby="rawDataTitle">
+  <div class="modal" style="max-width:660px">
+    <div class="modal-header">
+      <span class="modal-title" id="rawDataTitle">🗄 Raw Data Store (localStorage)</span>
+      <button class="modal-close" onclick="document.getElementById('rawDataModal').classList.remove('open')" aria-label="Close">✕</button>
+    </div>
+    <div class="modal-body">
+      <p class="text-xs text-soft mb-2">This simulates what you would query from a real SQL database. In production: <code style="background:var(--bg-elevated);padding:1px 5px;border-radius:3px;font-family:var(--mono);color:var(--green)">SELECT * FROM sleep_entries WHERE user_id = ?</code></p>
+      <textarea id="rawDataDisplay" class="form-textarea"
+        style="font-family:var(--mono);font-size:12px;min-height:300px;background:var(--bg-darkest);color:var(--green);border-color:var(--border);line-height:1.7"
+        readonly></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="document.getElementById('rawDataModal').classList.remove('open')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     JAVASCRIPT
+     ══════════════════════════════════════════════════════ -->
+<script>
+'use strict';
+
+// ═══════════════════════════════════════════════════════
+// SPLASH SCREEN
+// ═══════════════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => {
+    document.getElementById('splashScreen').classList.add('hidden');
+    document.body.style.overflow = '';
+  }, 1800);
+});
+
+// ═══════════════════════════════════════════════════════
+// DATABASE LAYER — localStorage abstraction
+// In a real project, replace these with fetch() calls
+// to a Flask/Express backend that queries SQL/ORM.
+//
+// SQL equivalent of getSleepEntries():
+//   SELECT * FROM sleep_entries
+//   WHERE user_id = ?
+//   ORDER BY date DESC;
+// ═══════════════════════════════════════════════════════
+
+const DB = {
+  get(key) {
+    try { return JSON.parse(localStorage.getItem('snz_' + key)) || null; }
+    catch { return null; }
+  },
+  set(key, val) {
+    try { localStorage.setItem('snz_' + key, JSON.stringify(val)); return true; }
+    catch { return false; }
+  },
+  del(key) { localStorage.removeItem('snz_' + key); }
+};
+
+// ── User table (simulated) ────────────────────────────
+// Schema:
+// users { id, firstName, lastName, email, passwordHash, school, createdAt }
+function getUsers() { return DB.get('users') || []; }
+function saveUsers(u) { DB.set('users', u); }
+
+function findUserByEmail(email) {
+  return getUsers().find(u => u.email.toLowerCase() === email.toLowerCase()) || null;
+}
+
+// ── SIMULATED BCRYPT ──────────────────────────────────
+// In production: use flask_bcrypt.generate_password_hash(password)
+// The real hash looks like: $2b$12$...60chars
+// Here we simulate the STORED value for demo purposes.
+function simulateHash(password) {
+  const salt = '$2b$12$SnoozrDemoSaltHSCTask2.';
+  let h = 5381;
+  const str = salt + password;
+  for (let i = 0; i < str.length; i++) {
+    h = ((h << 5) + h) ^ str.charCodeAt(i);
+    h = h >>> 0;
+  }
+  return '$2b$12$' + h.toString(36).padStart(22, '0') +
+    btoa(password).replace(/=/g, '').substring(0, 31);
+}
+
+function verifyHash(password, hash) {
+  return simulateHash(password) === hash;
+}
+
+// ── Sleep entries table ──────────────────────────────
+// Schema: sleep_entries { id, userId, date, bedtime, wakeTime, durationMins, quality, notes, createdAt, updatedAt }
+function getEntries(userId) {
+  return (DB.get('entries') || []).filter(e => e.userId === userId);
+}
+function allEntriesRaw() { return DB.get('entries') || []; }
+function saveEntriesRaw(arr) { DB.set('entries', arr); }
+
+// ── Goals table ──────────────────────────────────────
+// Schema: goals { userId, type, value, steps }
+function getGoal(userId) {
+  return (DB.get('goals') || []).find(g => g.userId === userId) || null;
+}
+function allGoalsRaw() { return DB.get('goals') || []; }
+function saveGoalsRaw(arr) { DB.set('goals', arr); }
+
+// ── ID generator ─────────────────────────────────────
+function genId() {
+  return Date.now().toString(36) + Math.random().toString(36).substring(2, 7);
+}
+
+// ── Current session ──────────────────────────────────
+let currentUser = null;
+
+function loadCurrentUser() {
+  const uid = DB.get('currentUserId');
+  if (!uid) return null;
+  return getUsers().find(u => u.id === uid) || null;
+}
+
+function setCurrentUser(user) {
+  currentUser = user;
+  DB.set('currentUserId', user ? user.id : null);
+}
+
+// ═══════════════════════════════════════════════════════
+// SEED DEMO DATA
+// ═══════════════════════════════════════════════════════
+function seedDemoData() {
+  if (findUserByEmail('demo@student.edu')) return;
+
+  const userId = 'demo_user_001';
+  const users = getUsers();
+  users.push({
+    id: userId,
+    firstName: 'Alex',
+    lastName: 'Demo',
+    email: 'demo@student.edu',
+    passwordHash: simulateHash('Demo1234!'),
+    school: 'North Sydney Boys High — Year 11',
+    createdAt: new Date('2026-02-01').toISOString()
+  });
+  saveUsers(users);
+
+  const entries = allEntriesRaw();
+  const today = new Date();
+  const qualities = ['great','good','good','okay','poor','good','okay'];
+  const notesSamples = [
+    'Slept well, no interruptions.',
+    'Stayed up a bit late finishing homework.',
+    'Woke up once but fell back asleep quickly.',
+    'Stressed about upcoming exam.',
+    'Had coffee too late in the day.',
+    'Felt rested and energised!',
+    'Phone kept me up — should put it away earlier.',
+    ''
+  ];
+
+  const seedEntries = [
+    { daysAgo: 0,  bed: '23:15', wake: '06:45', qi: 2, ni: 1 },
+    { daysAgo: 1,  bed: '22:45', wake: '06:30', qi: 1, ni: 5 },
+    { daysAgo: 2,  bed: '00:30', wake: '07:00', qi: 4, ni: 4 },
+    { daysAgo: 3,  bed: '23:00', wake: '07:15', qi: 1, ni: 2 },
+    { daysAgo: 4,  bed: '23:30', wake: '06:00', qi: 3, ni: 6 },
+    { daysAgo: 5,  bed: '22:30', wake: '06:45', qi: 0, ni: 0 },
+    { daysAgo: 6,  bed: '23:45', wake: '07:00', qi: 2, ni: 7 },
+    { daysAgo: 8,  bed: '00:15', wake: '06:30', qi: 4, ni: 4 },
+    { daysAgo: 9,  bed: '23:00', wake: '07:00', qi: 1, ni: 2 },
+    { daysAgo: 10, bed: '22:45', wake: '06:30', qi: 0, ni: 5 },
+    { daysAgo: 12, bed: '01:00', wake: '07:30', qi: 3, ni: 6 },
+    { daysAgo: 14, bed: '23:30', wake: '06:45', qi: 2, ni: 7 },
+  ];
+
+  seedEntries.forEach(s => {
+    const d = new Date(today);
+    d.setDate(d.getDate() - s.daysAgo);
+    const dateStr = d.toISOString().split('T')[0];
+    const dur = calcDurationFromTimes(s.bed, s.wake);
+    entries.push({
+      id: genId(),
+      userId,
+      date: dateStr,
+      bedtime: s.bed,
+      wakeTime: s.wake,
+      durationMins: dur,
+      quality: qualities[s.qi],
+      notes: notesSamples[s.ni],
+      createdAt: d.toISOString(),
+      updatedAt: d.toISOString()
+    });
+  });
+  saveEntriesRaw(entries);
+
+  // Set a default goal
+  const goals = allGoalsRaw();
+  goals.push({ userId, type: 'duration', value: 8, steps: 5 });
+  saveGoalsRaw(goals);
+}
+
+function calcDurationFromTimes(bedtime, wakeTime) {
+  const [bh, bm] = bedtime.split(':').map(Number);
+  const [wh, wm] = wakeTime.split(':').map(Number);
+  let bedMins = bh * 60 + bm;
+  let wakeMins = wh * 60 + wm;
+  if (wakeMins <= bedMins) wakeMins += 24 * 60; // next day
+  return wakeMins - bedMins;
+}
+
+// ═══════════════════════════════════════════════════════
+// VIEW ROUTING
+// ═══════════════════════════════════════════════════════
+function showView(id) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  const el = document.getElementById(id);
+  if (el) { el.classList.add('active'); el.querySelector('input,button')?.focus(); }
+}
+
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => {
+    n.classList.remove('active');
+    n.removeAttribute('aria-current');
+  });
+  document.getElementById('page-' + name)?.classList.add('active');
+  const navBtn = document.querySelector(`.nav-item[data-page="${name}"]`);
+  if (navBtn) { navBtn.classList.add('active'); navBtn.setAttribute('aria-current', 'page'); }
+  if (name === 'dashboard') renderDashboard();
+  if (name === 'sessions')  renderSessionsTable();
+  if (name === 'goals')     renderGoals();
+  if (name === 'insights')  renderInsights();
+  if (name === 'settings')  populateSettings();
+}
+
+function showSettingsTab(btn, tabId) {
+  document.querySelectorAll('.settings-nav-item').forEach(b => {
+    b.classList.remove('active');
+    b.setAttribute('aria-selected', 'false');
+  });
+  document.querySelectorAll('[role="tabpanel"]').forEach(t => t.style.display = 'none');
+  btn.classList.add('active');
+  btn.setAttribute('aria-selected', 'true');
+  document.getElementById(tabId).style.display = 'block';
+}
+
+// ═══════════════════════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════════════════════
+function setFieldError(inputId, errId, msg) {
+  const inp = document.getElementById(inputId);
+  const err = document.getElementById(errId);
+  if (!inp || !err) return;
+  if (msg) {
+    inp.classList.add('error');
+    err.textContent = msg;
+    err.classList.add('visible');
+  } else {
+    inp.classList.remove('error');
+    err.textContent = '';
+    err.classList.remove('visible');
+  }
+}
+
+function validateEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+function handleLogin(e) {
+  e.preventDefault();
+  const email    = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  let valid = true;
+
+  setFieldError('loginEmail', 'loginEmailErr', '');
+  setFieldError('loginPassword', 'loginPasswordErr', '');
+  const ge = document.getElementById('loginGlobalErr');
+  ge.classList.remove('visible'); ge.textContent = '';
+
+  if (!email) { setFieldError('loginEmail', 'loginEmailErr', 'Email address is required.'); valid = false; }
+  else if (!validateEmail(email)) { setFieldError('loginEmail', 'loginEmailErr', 'Please enter a valid email address.'); valid = false; }
+  if (!password) { setFieldError('loginPassword', 'loginPasswordErr', 'Password is required.'); valid = false; }
+
+  if (!valid) return;
+
+  const user = findUserByEmail(email);
+  if (!user || !verifyHash(password, user.passwordHash)) {
+    ge.textContent = 'Incorrect email or password. Please try again.';
+    ge.classList.add('visible');
+    return;
+  }
+
+  setCurrentUser(user);
+  bootApp();
+}
+
+function handleRegister(e) {
+  e.preventDefault();
+  const firstName = document.getElementById('regFirstName').value.trim();
+  const lastName  = document.getElementById('regLastName').value.trim();
+  const email     = document.getElementById('regEmail').value.trim();
+  const school    = document.getElementById('regSchool').value.trim();
+  const password  = document.getElementById('regPassword').value;
+  const confirm   = document.getElementById('regConfirm').value;
+  let valid = true;
+
+  ['regFirstName','regLastName','regEmail','regPassword','regConfirm'].forEach(id => {
+    document.getElementById(id).classList.remove('error');
+  });
+  ['regFirstNameErr','regLastNameErr','regEmailErr','regPasswordErr','regConfirmErr','regGlobalErr'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el){ el.textContent=''; el.classList.remove('visible'); }
+  });
+
+  if (!firstName) { setFieldError('regFirstName','regFirstNameErr','First name is required.'); valid=false; }
+  if (!lastName)  { setFieldError('regLastName','regLastNameErr','Last name is required.'); valid=false; }
+  if (!email) { setFieldError('regEmail','regEmailErr','Email is required.'); valid=false; }
+  else if (!validateEmail(email)) { setFieldError('regEmail','regEmailErr','Please enter a valid email address.'); valid=false; }
+  else if (findUserByEmail(email)) { setFieldError('regEmail','regEmailErr','An account with this email already exists.'); valid=false; }
+  if (!password) { setFieldError('regPassword','regPasswordErr','Password is required.'); valid=false; }
+  else if (password.length < 8) { setFieldError('regPassword','regPasswordErr','Password must be at least 8 characters.'); valid=false; }
+  else if (!/\d/.test(password)) { setFieldError('regPassword','regPasswordErr','Password must contain at least one number.'); valid=false; }
+  if (password !== confirm) { setFieldError('regConfirm','regConfirmErr','Passwords do not match.'); valid=false; }
+
+  if (!valid) return;
+
+  const user = {
+    id: genId(),
+    firstName, lastName, email, school,
+    passwordHash: simulateHash(password),
+    createdAt: new Date().toISOString()
+  };
+  const users = getUsers();
+  users.push(user);
+  saveUsers(users);
+  setCurrentUser(user);
+  bootApp();
+  showToast('Account created! Welcome to Snoozr.', 'success');
+}
+
+function handleLogout() {
+  setCurrentUser(null);
+  showView('view-login');
+  document.getElementById('loginEmail').value = '';
+  document.getElementById('loginPassword').value = '';
+  showToast('You have been signed out.');
+}
+
+function fillDemo() {
+  document.getElementById('loginEmail').value = 'demo@student.edu';
+  document.getElementById('loginPassword').value = 'Demo1234!';
+}
+
+function checkPasswordStrength(val) {
+  const bars  = [1,2,3,4].map(i => document.getElementById('pwBar'+i));
+  const label = document.getElementById('pwStrengthLabel');
+  if (!val) { bars.forEach(b => b.className='pw-bar'); label.textContent=''; return; }
+  let score = 0;
+  if (val.length >= 8)  score++;
+  if (val.length >= 12) score++;
+  if (/\d/.test(val))   score++;
+  if (/[^a-zA-Z0-9]/.test(val)) score++;
+  const levels = ['','weak','weak','medium','strong'];
+  const labels = ['','Too short','Weak','Moderate','Strong'];
+  bars.forEach((b,i) => { b.className = 'pw-bar' + (i < score ? ' '+(levels[score]||'') : ''); });
+  label.textContent = labels[score] || '';
+  label.style.color = score <= 1 ? 'var(--red)' : score === 2 ? 'var(--amber)' : 'var(--green)';
+}
+
+// ═══════════════════════════════════════════════════════
+// APP BOOT
+// ═══════════════════════════════════════════════════════
+function bootApp() {
+  if (!currentUser) return;
+  document.getElementById('topbarUsername').textContent = currentUser.firstName + ' ' + currentUser.lastName;
+  document.getElementById('topbarAvatar').textContent = (currentUser.firstName[0] || 'U').toUpperCase();
+  document.getElementById('devUserId').textContent = '"' + currentUser.id + '"';
+  showView('view-app');
+  showPage('dashboard');
+  updateDashGreeting();
+}
+
+function updateDashGreeting() {
+  const h = new Date().getHours();
+  const greeting = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+  const emoji = h < 6 ? '🌙' : h < 12 ? '☀️' : h < 17 ? '🌤️' : '🌙';
+  document.getElementById('dashGreeting').textContent = `${greeting}, ${currentUser.firstName} ${emoji}`;
+}
+
+// ═══════════════════════════════════════════════════════
+// DASHBOARD
+// ═══════════════════════════════════════════════════════
+function renderDashboard() {
+  const entries = getEntries(currentUser.id);
+  const goal    = getGoal(currentUser.id);
+
+  const now = new Date();
+  const weekStart = new Date(now);
+  weekStart.setDate(now.getDate() - now.getDay());
+  weekStart.setHours(0,0,0,0);
+
+  const weekEntries = entries.filter(e => new Date(e.date) >= weekStart);
+  const weekAvg = weekEntries.length > 0
+    ? (weekEntries.reduce((a, e) => a + e.durationMins, 0) / weekEntries.length / 60).toFixed(1)
+    : '—';
+
+  // Goal progress
+  let goalPctText = '—';
+  if (goal && weekEntries.length > 0) {
+    const avg = weekEntries.reduce((a, e) => a + e.durationMins, 0) / weekEntries.length / 60;
+    const pct = Math.min(100, Math.round(avg / goal.value * 100));
+    goalPctText = pct + '%';
+  }
+
+  // Streak
+  const streak = calcStreak(entries);
+
+  document.getElementById('statWeekAvg').textContent = weekAvg === '—' ? '—' : weekAvg + 'h';
+  document.getElementById('statTotalEntries').textContent = entries.length;
+  document.getElementById('statGoalPct').textContent = goalPctText;
+  document.getElementById('statStreak').textContent = streak;
+  document.getElementById('sessionsBadge').textContent = entries.length;
+  document.getElementById('devEntryCount').textContent = entries.length;
+
+  // Achievements
+  renderAchievements(entries, streak);
+
+  // Weekly chart
+  renderWeekChart(weekEntries);
+
+  // Recent entries
+  renderRecentActivity(entries);
+
+  // Bar chart (avg by day of week)
+  renderDayOfWeekChart(entries);
+}
+
+function calcStreak(entries) {
+  if (!entries.length) return 0;
+  const sorted = [...entries].sort((a, b) => new Date(b.date) - new Date(a.date));
+  const dates = [...new Set(sorted.map(e => e.date))].sort().reverse();
+  let streak = 0;
+  const today = new Date();
+  today.setHours(0,0,0,0);
+
+  for (let i = 0; i < dates.length; i++) {
+    const expected = new Date(today);
+    expected.setDate(today.getDate() - i);
+    const expStr = expected.toISOString().split('T')[0];
+    if (dates[i] === expStr) {
+      streak++;
+    } else {
+      break;
+    }
+  }
+  return streak;
+}
+
+function renderAchievements(entries, streak) {
+  const wrap = document.getElementById('dashAchievements');
+  const chips = [];
+  if (streak >= 3) chips.push('🔥 ' + streak + '-day streak!');
+  if (streak >= 7) chips.push('⭐ Week warrior!');
+  if (entries.length >= 10) chips.push('📊 10+ entries logged');
+  if (entries.length >= 1) {
+    const avg = entries.reduce((a, e) => a + e.durationMins, 0) / entries.length / 60;
+    if (avg >= 7) chips.push('🌟 Averaging 7+ hours');
+  }
+  wrap.innerHTML = chips.map(c => `<span class="achievement">${c}</span> `).join('');
+}
+
+function renderWeekChart(weekEntries) {
+  const wrap = document.getElementById('weekChartWrap');
+  const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const today = new Date().getDay();
+
+  const now = new Date();
+  const weekStart = new Date(now);
+  weekStart.setDate(now.getDate() - now.getDay());
+  weekStart.setHours(0,0,0,0);
+
+  const dayData = days.map((d, i) => {
+    const dayDate = new Date(weekStart);
+    dayDate.setDate(weekStart.getDate() + i);
+    const dateStr = dayDate.toISOString().split('T')[0];
+    const dayEntries = weekEntries.filter(e => e.date === dateStr);
+    const hrs = dayEntries.length > 0
+      ? dayEntries.reduce((a, e) => a + e.durationMins, 0) / 60
+      : 0;
+    return { day: d, hrs, isToday: i === today };
+  });
+
+  const maxHrs = Math.max(10, ...dayData.map(d => d.hrs));
+
+  wrap.innerHTML = `<div class="week-chart">${dayData.map(d => {
+    const pct = d.hrs > 0 ? Math.max(5, (d.hrs / maxHrs) * 100) : 2;
+    return `<div class="week-bar-wrap">
+      <span class="week-bar-val">${d.hrs > 0 ? d.hrs.toFixed(1) : ''}</span>
+      <div class="week-bar-container">
+        <div class="week-bar${d.isToday ? ' today' : ''}" style="height:${pct}%"></div>
+      </div>
+      <span class="week-bar-day${d.isToday ? ' today-label' : ''}">${d.day}</span>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+function renderRecentActivity(entries) {
+  const wrap = document.getElementById('recentActivityList');
+  const sorted = [...entries].sort((a, b) => new Date(b.date) - new Date(a.date));
+  const recent = sorted.slice(0, 5);
+
+  if (!recent.length) {
+    wrap.innerHTML = '<div class="empty-state" style="padding:30px"><div class="empty-icon">😴</div><div class="empty-desc text-sm">No entries yet.</div></div>';
+    return;
+  }
+
+  const qualityIcons = { great:'😴', good:'🙂', okay:'😐', poor:'😓', terrible:'😩' };
+
+  wrap.innerHTML = recent.map(e => {
+    const hrs = (e.durationMins / 60).toFixed(1);
+    return `<div class="activity-item">
+      <div class="activity-dot">${qualityIcons[e.quality] || '😐'}</div>
+      <div class="activity-text">
+        <div class="activity-title">${hrs}h of sleep</div>
+        <div class="activity-meta">${e.bedtime} → ${e.wakeTime} · ${e.quality}</div>
+      </div>
+      <div class="activity-time">${formatDate(e.date)}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderDayOfWeekChart(entries) {
+  const wrap = document.getElementById('barChartWrap');
+  if (entries.length < 3) {
+    wrap.innerHTML = '<div class="empty-state" style="padding:20px"><div class="empty-icon">📈</div><div class="empty-desc text-sm">Add more entries to see patterns.</div></div>';
+    return;
+  }
+
+  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const dayTotals = Array(7).fill(null).map(() => ({ total: 0, count: 0 }));
+
+  entries.forEach(e => {
+    const d = new Date(e.date + 'T12:00:00');
+    const day = d.getDay();
+    dayTotals[day].total += e.durationMins;
+    dayTotals[day].count++;
+  });
+
+  const dayAvgs = dayTotals.map((d, i) => ({
+    day: days[i],
+    avg: d.count > 0 ? d.total / d.count / 60 : 0
+  }));
+
+  const maxAvg = Math.max(...dayAvgs.map(d => d.avg), 1);
+
+  wrap.innerHTML = '<div class="bar-chart">' + dayAvgs.map(d => {
+    const pct = d.avg > 0 ? Math.round(d.avg / maxAvg * 100) : 0;
+    return `<div class="bar-row">
+      <span class="bar-label">${d.day}</span>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div>
+      <span class="bar-value">${d.avg > 0 ? d.avg.toFixed(1) + 'h' : '—'}</span>
+    </div>`;
+  }).join('') + '</div>';
+}
+
+// ═══════════════════════════════════════════════════════
+// SESSIONS TABLE (Full CRUD)
+// ═══════════════════════════════════════════════════════
+function renderSessionsTable() {
+  let entries = getEntries(currentUser.id);
+  const tbody = document.getElementById('sessionsTableBody');
+
+  // Search
+  const search = (document.getElementById('sessionSearch').value || '').toLowerCase();
+  if (search) {
+    entries = entries.filter(e =>
+      (e.notes || '').toLowerCase().includes(search) ||
+      (e.quality || '').toLowerCase().includes(search)
+    );
+  }
+
+  // Filter
+  const filterQ = document.getElementById('sessionFilterQuality').value;
+  if (filterQ) entries = entries.filter(e => e.quality === filterQ);
+
+  // Sort
+  const sort = document.getElementById('sessionSort').value;
+  entries.sort((a, b) => {
+    if (sort === 'newest') return new Date(b.date) - new Date(a.date);
+    if (sort === 'oldest') return new Date(a.date) - new Date(b.date);
+    if (sort === 'duration-desc') return b.durationMins - a.durationMins;
+    if (sort === 'duration-asc') return a.durationMins - b.durationMins;
+    return 0;
+  });
+
+  document.getElementById('sessionsCount').textContent = entries.length + ' entries';
+
+  if (!entries.length) {
+    tbody.innerHTML = `<tr><td colspan="7">
+      <div class="empty-state">
+        <div class="empty-icon">😴</div>
+        <div class="empty-title">No entries found</div>
+        <div class="empty-desc">Try adjusting your filters or add a new entry.</div>
+        <button class="btn btn-primary" onclick="openAddModal()">＋ Log Sleep</button>
+      </div>
+    </td></tr>`;
+    return;
+  }
+
+  const qualityBadges = {
+    great: 'badge-green', good: 'badge-blue', okay: 'badge-grey',
+    poor: 'badge-amber', terrible: 'badge-red'
+  };
+  const qualityIcons = { great:'😴', good:'🙂', okay:'😐', poor:'😓', terrible:'😩' };
+
+  tbody.innerHTML = entries.map(e => {
+    const hrs = (e.durationMins / 60).toFixed(1);
+    const badge = qualityBadges[e.quality] || 'badge-grey';
+    const icon = qualityIcons[e.quality] || '😐';
+    return `<tr>
+      <td>${formatDate(e.date)}</td>
+      <td class="td-mono">${e.bedtime}</td>
+      <td class="td-mono">${e.wakeTime}</td>
+      <td class="td-mono">${hrs}h</td>
+      <td><span class="badge ${badge}">${icon} ${e.quality}</span></td>
+      <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(e.notes || '—')}</td>
+      <td style="text-align:right;white-space:nowrap">
+        <button class="btn btn-ghost btn-sm" onclick="editEntry('${e.id}')">✏️ Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteEntry('${e.id}')" style="margin-left:4px">🗑</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════
+// SESSION CRUD
+// ═══════════════════════════════════════════════════════
+let selectedQuality = 'okay';
+
+function selectQuality(el) {
+  document.querySelectorAll('.quality-option').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedQuality = el.dataset.val;
+}
+
+function openAddModal() {
+  document.getElementById('sessionEditId').value = '';
+  document.getElementById('sessionModalTitle').textContent = 'Log Sleep';
+  document.getElementById('sessionSaveBtn').textContent = 'Log Sleep';
+  document.getElementById('sessionDate').value = new Date().toISOString().split('T')[0];
+  document.getElementById('sessionBedtime').value = '23:00';
+  document.getElementById('sessionWakeTime').value = '07:00';
+  document.getElementById('sessionNotes').value = '';
+  selectedQuality = 'okay';
+  document.querySelectorAll('.quality-option').forEach(o => {
+    o.classList.toggle('selected', o.dataset.val === 'okay');
+  });
+  updateCalcDuration();
+  openModal('sessionModal');
+}
+
+function editEntry(id) {
+  const entry = getEntries(currentUser.id).find(e => e.id === id);
+  if (!entry) return;
+  document.getElementById('sessionEditId').value = entry.id;
+  document.getElementById('sessionModalTitle').textContent = 'Edit Sleep Entry';
+  document.getElementById('sessionSaveBtn').textContent = 'Save Changes';
+  document.getElementById('sessionDate').value = entry.date;
+  document.getElementById('sessionBedtime').value = entry.bedtime;
+  document.getElementById('sessionWakeTime').value = entry.wakeTime;
+  document.getElementById('sessionNotes').value = entry.notes || '';
+  selectedQuality = entry.quality;
+  document.querySelectorAll('.quality-option').forEach(o => {
+    o.classList.toggle('selected', o.dataset.val === entry.quality);
+  });
+  updateCalcDuration();
+  openModal('sessionModal');
+}
+
+function saveSession(e) {
+  if (e) e.preventDefault();
+  const editId   = document.getElementById('sessionEditId').value;
+  const date     = document.getElementById('sessionDate').value;
+  const bedtime  = document.getElementById('sessionBedtime').value;
+  const wakeTime = document.getElementById('sessionWakeTime').value;
+  const notes    = document.getElementById('sessionNotes').value.trim();
+  let valid = true;
+
+  // Clear errors
+  ['sessionDateErr','sessionBedtimeErr','sessionWakeTimeErr'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el){ el.textContent=''; el.classList.remove('visible'); }
+  });
+  ['sessionDate','sessionBedtime','sessionWakeTime'].forEach(id => {
+    document.getElementById(id).classList.remove('error');
+  });
+
+  if (!date)     { setFieldError('sessionDate','sessionDateErr','Date is required.'); valid=false; }
+  if (!bedtime)  { setFieldError('sessionBedtime','sessionBedtimeErr','Bedtime is required.'); valid=false; }
+  if (!wakeTime) { setFieldError('sessionWakeTime','sessionWakeTimeErr','Wake time is required.'); valid=false; }
+
+  // Check date not in future
+  if (date && new Date(date + 'T23:59:59') > new Date()) {
+    // allow today
+    const todayStr = new Date().toISOString().split('T')[0];
+    if (date > todayStr) {
+      setFieldError('sessionDate','sessionDateErr','Date cannot be in the future.'); valid=false;
+    }
+  }
+
+  if (!valid) return;
+
+  const durationMins = calcDurationFromTimes(bedtime, wakeTime);
+
+  if (durationMins < 30 || durationMins > 960) {
+    setFieldError('sessionWakeTime','sessionWakeTimeErr','Duration seems unusual (must be 0.5–16 hours).'); return;
+  }
+
+  const entries = allEntriesRaw();
+
+  if (editId) {
+    // UPDATE
+    const idx = entries.findIndex(e => e.id === editId && e.userId === currentUser.id);
+    if (idx === -1) return;
+    entries[idx] = { ...entries[idx], date, bedtime, wakeTime, durationMins, quality: selectedQuality, notes, updatedAt: new Date().toISOString() };
+    saveEntriesRaw(entries);
+    showToast('Entry updated!', 'success');
+  } else {
+    // CREATE
+    entries.push({
+      id: genId(),
+      userId: currentUser.id,
+      date, bedtime, wakeTime, durationMins,
+      quality: selectedQuality,
+      notes,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    });
+    saveEntriesRaw(entries);
+    showToast('Sleep logged! 🌙', 'success');
+  }
+
+  closeSessionModal();
+  renderDashboard();
+  renderSessionsTable();
+}
+
+function deleteEntry(id) {
+  showConfirm('Delete Entry', 'Are you sure you want to delete this sleep entry? This cannot be undone.', () => {
+    const entries = allEntriesRaw().filter(e => !(e.id === id && e.userId === currentUser.id));
+    saveEntriesRaw(entries);
+    renderDashboard();
+    renderSessionsTable();
+    showToast('Entry deleted.', 'success');
+  });
+}
+
+function closeSessionModal() { closeModal('sessionModal'); }
+
+// Auto-calc duration when times change
+document.getElementById('sessionBedtime')?.addEventListener('input', updateCalcDuration);
+document.getElementById('sessionWakeTime')?.addEventListener('input', updateCalcDuration);
+
+function updateCalcDuration() {
+  const bed = document.getElementById('sessionBedtime').value;
+  const wake = document.getElementById('sessionWakeTime').value;
+  const wrap = document.getElementById('calcDurationWrap');
+  const disp = document.getElementById('calcDuration');
+  if (bed && wake) {
+    const dur = calcDurationFromTimes(bed, wake);
+    disp.textContent = (dur / 60).toFixed(1) + ' hours';
+    wrap.style.display = 'block';
+  } else {
+    wrap.style.display = 'none';
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// GOALS — Progressive step system
+// ═══════════════════════════════════════════════════════
+function updateGoalInputs() {
+  const type = document.getElementById('goalType').value;
+  const wrap = document.getElementById('goalValueWrap');
+  if (type === 'bedtime') {
+    wrap.innerHTML = `<label class="form-label" for="goalValue">Target bedtime</label>
+      <input class="form-input" type="time" id="goalValue" value="22:30">`;
+  } else {
+    wrap.innerHTML = `<label class="form-label" for="goalValue">Target hours</label>
+      <input class="form-input" type="number" id="goalValue" min="5" max="12" step="0.5" value="8" placeholder="8">`;
+  }
+}
+
+function saveGoalSettings() {
+  const type  = document.getElementById('goalType').value;
+  const value = type === 'bedtime'
+    ? document.getElementById('goalValue').value
+    : parseFloat(document.getElementById('goalValue').value) || 8;
+  const steps = parseInt(document.getElementById('goalSteps').value) || 5;
+
+  const goals = allGoalsRaw().filter(g => g.userId !== currentUser.id);
+  goals.push({ userId: currentUser.id, type, value, steps });
+  saveGoalsRaw(goals);
+  renderGoals();
+  showToast('Goal saved! 🎯', 'success');
+}
+
+function renderGoals() {
+  const entries = getEntries(currentUser.id);
+  const goal = getGoal(currentUser.id);
+  const wrap = document.getElementById('goalProgressWrap');
+
+  if (!goal || entries.length < 2) {
+    wrap.innerHTML = `<div class="card"><div class="card-body">
+      <div class="empty-state" style="padding:30px">
+        <div class="empty-icon">🎯</div>
+        <div class="empty-title">Set a goal above</div>
+        <div class="empty-desc">Log some sleep first, then save a goal to see your progressive plan.</div>
+      </div>
+    </div></div>`;
+
+    // Populate form from saved goal
+    if (goal) {
+      document.getElementById('goalType').value = goal.type;
+      updateGoalInputs();
+      document.getElementById('goalValue').value = goal.value;
+      document.getElementById('goalSteps').value = goal.steps;
+    }
+    return;
+  }
+
+  // Populate form
+  document.getElementById('goalType').value = goal.type;
+  updateGoalInputs();
+  document.getElementById('goalValue').value = goal.value;
+  document.getElementById('goalSteps').value = goal.steps;
+
+  if (goal.type === 'duration') {
+    renderDurationGoal(entries, goal);
+  } else {
+    renderBedtimeGoal(entries, goal);
+  }
+}
+
+function renderDurationGoal(entries, goal) {
+  const wrap = document.getElementById('goalProgressWrap');
+  const currentAvg = entries.reduce((a, e) => a + e.durationMins, 0) / entries.length / 60;
+  const target = goal.value;
+  const numSteps = goal.steps;
+
+  // Recent week average
+  const now = new Date();
+  const weekStart = new Date(now);
+  weekStart.setDate(now.getDate() - 7);
+  const recentEntries = entries.filter(e => new Date(e.date) >= weekStart);
+  const recentAvg = recentEntries.length > 0
+    ? recentEntries.reduce((a, e) => a + e.durationMins, 0) / recentEntries.length / 60
+    : currentAvg;
+
+  // Generate steps from current to target
+  const diff = target - currentAvg;
+  const stepSize = diff / numSteps;
+
+  const stepsData = [];
+  for (let i = 1; i <= numSteps; i++) {
+    const stepTarget = currentAvg + (stepSize * i);
+    const achieved = recentAvg >= stepTarget - 0.1; // small tolerance
+    stepsData.push({
+      num: i,
+      target: stepTarget,
+      achieved,
+      label: stepTarget.toFixed(1) + 'h per night'
+    });
+  }
+
+  // Current step
+  let currentStep = 0;
+  for (let i = 0; i < stepsData.length; i++) {
+    if (stepsData[i].achieved) currentStep = i + 1;
+  }
+
+  const overallPct = Math.min(100, Math.max(0, Math.round(((recentAvg - currentAvg) / diff) * 100)));
+
+  wrap.innerHTML = `
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-header">
+        <span class="card-title">Your Progressive Plan</span>
+        <span class="badge badge-lavender">Step ${Math.min(currentStep + 1, numSteps)} of ${numSteps}</span>
+      </div>
+      <div class="card-body">
+        <div style="margin-bottom:16px">
+          <div class="goal-info">
+            <span class="text-sm text-soft">Starting: <strong class="text-mono">${currentAvg.toFixed(1)}h</strong></span>
+            <span class="text-sm text-soft">Current week: <strong class="text-mono text-lavender">${recentAvg.toFixed(1)}h</strong></span>
+            <span class="text-sm text-soft">Goal: <strong class="text-mono text-green">${target}h</strong></span>
+          </div>
+          <div class="goal-bar-track" style="height:14px;margin:10px 0">
+            <div class="goal-bar-fill${overallPct >= 100 ? ' achieved' : ''}" style="width:${Math.max(2, overallPct)}%"></div>
+          </div>
+          <div class="step-indicator">
+            ${stepsData.map(s => `<div class="step-dot ${s.achieved ? 'complete' : s.num === currentStep + 1 ? 'current' : ''}"></div>`).join('')}
+          </div>
+        </div>
+        <hr class="divider">
+        ${stepsData.map(s => {
+          const stepPct = recentAvg >= s.target ? 100 : Math.max(0, Math.round((recentAvg / s.target) * 100));
+          return `<div class="goal-card" style="margin-bottom:10px;padding:14px 18px">
+            <div class="goal-info">
+              <span class="flex-center">
+                <span style="font-size:16px">${s.achieved ? '✅' : s.num === currentStep + 1 ? '👉' : '⬜'}</span>
+                <span class="bold text-sm">Step ${s.num}: ${s.label}</span>
+              </span>
+              <span class="text-xs text-mono ${s.achieved ? 'text-green' : 'text-soft'}">${s.achieved ? 'Achieved!' : stepPct + '%'}</span>
+            </div>
+            <div class="goal-bar-track" style="height:8px">
+              <div class="goal-bar-fill${s.achieved ? ' achieved' : ''}" style="width:${Math.max(2, stepPct)}%"></div>
+            </div>
+          </div>`;
+        }).join('')}
+        <div class="gentle-callout" style="margin-top:16px;margin-bottom:0">
+          <p>💜 <strong>Remember:</strong> These steps are based on YOUR sleep data. Each one is a small, reachable improvement. There's no pressure to hit every step perfectly — even small progress counts!</p>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderBedtimeGoal(entries, goal) {
+  const wrap = document.getElementById('goalProgressWrap');
+  // Convert bedtimes to minutes for averaging
+  const bedMins = entries.map(e => {
+    const [h, m] = e.bedtime.split(':').map(Number);
+    return h < 12 ? (h + 24) * 60 + m : h * 60 + m; // normalize past midnight
+  });
+  const avgBedMins = bedMins.reduce((a, b) => a + b, 0) / bedMins.length;
+  const [th, tm] = goal.value.split(':').map(Number);
+  const targetMins = th < 12 ? (th + 24) * 60 + tm : th * 60 + tm;
+
+  const currentBedH = Math.floor(avgBedMins / 60) % 24;
+  const currentBedM = Math.round(avgBedMins % 60);
+  const currentBedStr = String(currentBedH).padStart(2,'0') + ':' + String(currentBedM).padStart(2,'0');
+
+  wrap.innerHTML = `<div class="card"><div class="card-body">
+    <p class="text-sm text-soft mb-2">Your average bedtime is <strong class="text-mono text-lavender">${currentBedStr}</strong> and your target is <strong class="text-mono text-green">${goal.value}</strong>.</p>
+    <p class="text-sm text-soft">Snoozr will progressively guide you to shift your bedtime earlier in ${goal.steps} steps.</p>
+    <div class="gentle-callout" style="margin-top:16px;margin-bottom:0">
+      <p>💜 <strong>Tip:</strong> Try moving your bedtime just 15 minutes earlier each week. Small shifts are easier to stick to!</p>
+    </div>
+  </div></div>`;
+}
+
+// ═══════════════════════════════════════════════════════
+// INSIGHTS
+// ═══════════════════════════════════════════════════════
+function renderInsights() {
+  const entries = getEntries(currentUser.id);
+  const wrap = document.getElementById('insightsContent');
+
+  if (entries.length < 5) {
+    wrap.innerHTML = `<div class="card"><div class="card-body"><div class="empty-state">
+      <div class="empty-icon">💡</div>
+      <div class="empty-title">Not enough data yet</div>
+      <div class="empty-desc">Log at least 5 sleep entries to unlock insights.</div>
+    </div></div></div>`;
+    return;
+  }
+
+  const avgDur = entries.reduce((a, e) => a + e.durationMins, 0) / entries.length;
+  const avgHrs = (avgDur / 60).toFixed(1);
+
+  // Best & worst nights
+  const sorted = [...entries].sort((a, b) => b.durationMins - a.durationMins);
+  const best = sorted[0];
+  const worst = sorted[sorted.length - 1];
+
+  // Quality distribution
+  const qualCounts = {};
+  entries.forEach(e => { qualCounts[e.quality] = (qualCounts[e.quality] || 0) + 1; });
+  const mostCommonQ = Object.entries(qualCounts).sort((a, b) => b[1] - a[1])[0];
+
+  // Weekend vs weekday
+  const weekday = entries.filter(e => {
+    const d = new Date(e.date + 'T12:00:00').getDay();
+    return d >= 1 && d <= 5;
+  });
+  const weekend = entries.filter(e => {
+    const d = new Date(e.date + 'T12:00:00').getDay();
+    return d === 0 || d === 6;
+  });
+  const weekdayAvg = weekday.length > 0 ? (weekday.reduce((a, e) => a + e.durationMins, 0) / weekday.length / 60).toFixed(1) : '—';
+  const weekendAvg = weekend.length > 0 ? (weekend.reduce((a, e) => a + e.durationMins, 0) / weekend.length / 60).toFixed(1) : '—';
+
+  // Trend (last 7 vs prior 7)
+  const byDate = [...entries].sort((a, b) => new Date(b.date) - new Date(a.date));
+  const recent7 = byDate.slice(0, Math.min(7, byDate.length));
+  const prior7 = byDate.slice(7, Math.min(14, byDate.length));
+  const recentAvg = recent7.reduce((a, e) => a + e.durationMins, 0) / recent7.length / 60;
+  const priorAvg = prior7.length > 0 ? prior7.reduce((a, e) => a + e.durationMins, 0) / prior7.length / 60 : recentAvg;
+  const trendDiff = recentAvg - priorAvg;
+  const trendEmoji = trendDiff > 0.2 ? '📈' : trendDiff < -0.2 ? '📉' : '➡️';
+  const trendText = trendDiff > 0.2 ? `You're sleeping ${Math.abs(trendDiff).toFixed(1)}h more recently. Great progress!`
+    : trendDiff < -0.2 ? `You're sleeping ${Math.abs(trendDiff).toFixed(1)}h less recently. That's okay — small dips are normal.`
+    : 'Your sleep has been pretty consistent recently. Stability is good!';
+
+  wrap.innerHTML = `
+    <div class="gentle-callout">
+      <p>💜 <strong>These insights are for awareness, not judgement.</strong> Sleep varies naturally. Focus on gradual trends, not individual nights.</p>
+    </div>
+
+    <div class="stats-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:20px">
+      <div class="stat-card lavender">
+        <div class="stat-icon">⏰</div>
+        <div class="stat-value">${avgHrs}h</div>
+        <div class="stat-label">Overall average</div>
+      </div>
+      <div class="stat-card green">
+        <div class="stat-icon">🏆</div>
+        <div class="stat-value">${(best.durationMins/60).toFixed(1)}h</div>
+        <div class="stat-label">Best night</div>
+      </div>
+      <div class="stat-card blue">
+        <div class="stat-icon">${trendEmoji}</div>
+        <div class="stat-value">${trendDiff > 0 ? '+' : ''}${trendDiff.toFixed(1)}h</div>
+        <div class="stat-label">Recent trend</div>
+      </div>
+    </div>
+
+    <div class="dashboard-grid" style="margin-top:0">
+      <div class="card">
+        <div class="card-header"><span class="card-title">Trend Analysis</span></div>
+        <div class="card-body">
+          <p class="text-sm text-soft">${trendText}</p>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">Quality Breakdown</span></div>
+        <div class="card-body">
+          <p class="text-sm text-soft mb-1">Most common quality: <strong>${mostCommonQ[0]}</strong> (${mostCommonQ[1]} times)</p>
+          <div class="bar-chart" style="margin-top:12px">
+            ${['great','good','okay','poor','terrible'].map(q => {
+              const cnt = qualCounts[q] || 0;
+              const pct = Math.round(cnt / entries.length * 100);
+              const colors = { great:'var(--green)', good:'var(--blue)', okay:'var(--text-muted)', poor:'var(--amber)', terrible:'var(--red)' };
+              return `<div class="bar-row" style="grid-template-columns:70px 1fr 40px">
+                <span class="bar-label">${q}</span>
+                <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${colors[q]}"></div></div>
+                <span class="bar-value">${cnt}</span>
+              </div>`;
+            }).join('')}
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">Weekday vs Weekend</span></div>
+        <div class="card-body">
+          <p class="text-sm text-soft">Weekday average: <strong class="text-mono">${weekdayAvg}h</strong></p>
+          <p class="text-sm text-soft mt-1">Weekend average: <strong class="text-mono">${weekendAvg}h</strong></p>
+          ${weekendAvg !== '—' && weekdayAvg !== '—' && parseFloat(weekendAvg) - parseFloat(weekdayAvg) > 1
+            ? '<p class="text-xs text-amber mt-2">💡 Large weekend catch-up can indicate weekday sleep debt. Try adding 15 mins on school nights.</p>'
+            : '<p class="text-xs text-green mt-2">✅ Your weekday and weekend sleep are fairly balanced.</p>'}
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">Sleep Tip</span></div>
+        <div class="card-body">
+          <p class="text-sm text-soft">${generateTip(entries)}</p>
+        </div>
+      </div>
+    </div>`;
+}
+
+function generateTip(entries) {
+  const tips = [
+    '🌿 Try putting your phone in another room 30 minutes before bed. The blue light and notifications can delay sleep onset.',
+    '☕ Avoid caffeine after 2pm. It has a half-life of ~6 hours and can significantly reduce sleep quality.',
+    '🧘 A consistent wind-down routine signals your body it\'s time to sleep. Try reading, stretching, or deep breathing.',
+    '🌡️ A slightly cool room (18-20°C) is optimal for sleep. Try opening a window or using lighter blankets.',
+    '📱 Social media before bed can increase anxiety and delay sleep. Try swapping 15 min of scrolling for a podcast or music.',
+    '🕐 Going to bed and waking up at similar times — even on weekends — helps regulate your body clock.',
+    '💧 Stay hydrated during the day, but taper fluid intake in the evening to avoid waking up at night.',
+    '🏃 Regular exercise improves sleep quality, but try to finish intense workouts at least 3 hours before bedtime.',
+  ];
+  return tips[Math.floor(Math.random() * tips.length)];
+}
+
+// ═══════════════════════════════════════════════════════
+// SETTINGS
+// ═══════════════════════════════════════════════════════
+function populateSettings() {
+  if (!currentUser) return;
+  document.getElementById('setFirstName').value = currentUser.firstName || '';
+  document.getElementById('setLastName').value  = currentUser.lastName  || '';
+  document.getElementById('setEmail').value     = currentUser.email     || '';
+  document.getElementById('setSchool').value    = currentUser.school    || '';
+}
+
+function saveProfile() {
+  const users = getUsers();
+  const idx = users.findIndex(u => u.id === currentUser.id);
+  if (idx === -1) return;
+  users[idx].firstName = document.getElementById('setFirstName').value.trim();
+  users[idx].lastName  = document.getElementById('setLastName').value.trim();
+  users[idx].school    = document.getElementById('setSchool').value.trim();
+  saveUsers(users);
+  currentUser = users[idx];
+  document.getElementById('topbarUsername').textContent = currentUser.firstName + ' ' + currentUser.lastName;
+  document.getElementById('topbarAvatar').textContent = (currentUser.firstName[0]||'U').toUpperCase();
+  showToast('Profile saved.', 'success');
+}
+
+function changePassword() {
+  const cur  = document.getElementById('curPassword').value;
+  const nw   = document.getElementById('newPassword').value;
+  const conf = document.getElementById('confPassword').value;
+  const msg  = document.getElementById('pwChangeMsg');
+
+  msg.innerHTML = '';
+  if (!verifyHash(cur, currentUser.passwordHash)) {
+    msg.innerHTML = '<span class="text-red text-sm">Current password is incorrect.</span>'; return;
+  }
+  if (nw.length < 8) {
+    msg.innerHTML = '<span class="text-red text-sm">New password must be at least 8 characters.</span>'; return;
+  }
+  if (nw !== conf) {
+    msg.innerHTML = '<span class="text-red text-sm">New passwords do not match.</span>'; return;
+  }
+  const users = getUsers();
+  const idx = users.findIndex(u => u.id === currentUser.id);
+  users[idx].passwordHash = simulateHash(nw);
+  saveUsers(users);
+  currentUser = users[idx];
+  ['curPassword','newPassword','confPassword'].forEach(id => document.getElementById(id).value = '');
+  showToast('Password updated.', 'success');
+}
+
+// ═══════════════════════════════════════════════════════
+// DATA EXPORT & UTILS
+// ═══════════════════════════════════════════════════════
+function exportCSV() {
+  const entries = getEntries(currentUser.id);
+  const header = ['ID','Date','Bedtime','Wake Time','Duration (mins)','Quality','Notes','Created At'];
+  const rows = entries.map(e => [e.id, e.date, e.bedtime, e.wakeTime, e.durationMins, e.quality, `"${(e.notes||'').replace(/"/g,'""')}"`, e.createdAt]);
+  const csv = [header, ...rows].map(r => r.join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'snoozr_sleep_data.csv';
+  a.click();
+  showToast('CSV exported!', 'success');
+}
+
+function viewRawData() {
+  const data = {
+    users_table: getUsers().map(u => ({ ...u, passwordHash: u.passwordHash.substring(0,20)+'…' })),
+    sleep_entries_table: getEntries(currentUser.id),
+    goals_table: getGoal(currentUser.id)
+  };
+  document.getElementById('rawDataDisplay').value = JSON.stringify(data, null, 2);
+  openModal('rawDataModal');
+}
+
+function clearAllData() {
+  showConfirm('Delete All Data', 'Permanently delete ALL your sleep entries and goals? This cannot be undone.', () => {
+    saveEntriesRaw(allEntriesRaw().filter(e => e.userId !== currentUser.id));
+    saveGoalsRaw(allGoalsRaw().filter(g => g.userId !== currentUser.id));
+    renderDashboard();
+    renderSessionsTable();
+    renderGoals();
+    showToast('All data deleted.', 'success');
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// MODAL UTILS
+// ═══════════════════════════════════════════════════════
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+  document.body.style.overflow = 'hidden';
+  const focusable = document.getElementById(id).querySelector('input:not([type=hidden]),select,textarea,button');
+  setTimeout(() => focusable?.focus(), 100);
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
+  backdrop.addEventListener('click', e => {
+    if (e.target === backdrop) {
+      backdrop.classList.remove('open');
+      document.body.style.overflow = '';
+    }
+  });
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.modal-backdrop.open').forEach(m => {
+      m.classList.remove('open');
+      document.body.style.overflow = '';
+    });
+  }
+});
+
+// ═══════════════════════════════════════════════════════
+// CONFIRM DIALOG
+// ═══════════════════════════════════════════════════════
+let confirmCallback = null;
+
+function showConfirm(title, message, onOk) {
+  document.getElementById('confirmTitle').textContent = title;
+  document.getElementById('confirmMessage').textContent = message;
+  confirmCallback = onOk;
+  openModal('confirmModal');
+  document.getElementById('confirmOkBtn').focus();
+}
+
+function closeConfirm() { closeModal('confirmModal'); confirmCallback = null; }
+
+document.getElementById('confirmOkBtn').addEventListener('click', () => {
+  if (confirmCallback) { confirmCallback(); confirmCallback = null; }
+  closeModal('confirmModal');
+});
+
+// ═══════════════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════════════
+function showToast(message, type = 'info') {
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = 'toast ' + type;
+  const icons = { success: '✓', error: '✕', info: 'ℹ' };
+  toast.innerHTML = `<span style="font-size:16px">${icons[type]||'ℹ'}</span><span>${message}</span>`;
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.style.animation = 'toastOut 0.3s ease forwards';
+    setTimeout(() => toast.remove(), 300);
+  }, 3200);
+}
+
+// ═══════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════
+function formatDate(dateStr) {
+  if (!dateStr) return '—';
+  const d = new Date(dateStr + 'T12:00:00');
+  return d.toLocaleDateString('en-AU', { day:'numeric', month:'short', year:'numeric' });
+}
+
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ═══════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════
+seedDemoData();
+
+currentUser = loadCurrentUser();
+if (currentUser) {
+  bootApp();
+} else {
+  showView('view-login');
+}
+</script>
+</body>
+</html>
