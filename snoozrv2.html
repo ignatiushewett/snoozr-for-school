@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>snoozr</title>
+  <!--
+  ╔═══════════════════════════════════════════════════════════╗
+  ║  snoozr — HSC Software Engineering Task #2 Prototype      ║
+  ║  Student: [YOUR NAME]          Date: March 2026           ║
+  ╠═══════════════════════════════════════════════════════════╣
+  ║  CRUD STATUS:                                             ║
+  ║    CREATE ✓  Log a new sleep entry                        ║
+  ║    READ   ✓  View entries table with search/filter/sort   ║
+  ║    UPDATE ✓  Edit an entry via modal form                 ║
+  ║    DELETE ✓  Delete an entry (custom modal confirmation)  ║
+  ║                                                           ║
+  ║  ADDITIONAL FEATURES:                                     ║
+  ║    Tags with colour coding                                ║
+  ║    Progressive goal-setting with step suggestions         ║
+  ║    Weekly bar chart on dashboard                          ║
+  ║    CSV export                                             ║
+  ║    Toast notifications                                    ║
+  ║    Splash screen                                          ║
+  ║                                                           ║
+  ║  SECURITY:                                                ║
+  ║    Passwords hashed before storage (simulateHash).        ║
+  ║    Plain-text password is never saved.                    ║
+  ║    User input escaped before DOM insertion.               ║
+  ║                                                           ║
+  ║  DATA STORE: localStorage (simulates a database)          ║
+  ║    SQL equivalents shown in comments near data functions. ║
+  ║  Demo login: iggy@snoozr.com / Iggy12345!                ║
+  ╚═══════════════════════════════════════════════════════════╝
+  -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+  <style>
+:root{--bg0:#08080d;--bg1:#0f0f16;--bg2:#15151e;--bg3:#1b1b27;--brd:#252535;--brd2:#35354a;--blue:#4a6cf7;--blue-d:rgba(74,108,247,.14);--blue-g:rgba(74,108,247,.28);--grn:#34d399;--grn-d:rgba(52,211,153,.12);--red:#f87171;--red-d:rgba(248,113,113,.12);--amb:#fbbf24;--amb-d:rgba(251,191,36,.12);--tx:#e2e2ee;--tx2:#74748a;--tx3:#44445a;--r:8px;--r2:12px;--sh:0 2px 10px rgba(0,0,0,.45);--sh2:0 8px 28px rgba(0,0,0,.55);--tr:.14s ease;--f:'DM Sans',system-ui,sans-serif;--grad:var(--blue)}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--f);background:var(--bg0);color:var(--tx);font-size:14px;line-height:1.55;overflow-x:hidden}
+
+/* ── Logo ── */
+.logo{height:22px;width:auto;display:block}
+.logo-lg{height:40px}
+.logo-auth{height:28px;margin-bottom:2px}
+
+/* ── Splash ── */
+#splash{position:fixed;inset:0;background:var(--bg0);display:flex;align-items:center;justify-content:center;z-index:9999;transition:opacity .4s,visibility .4s}
+#splash.h{opacity:0;visibility:hidden}
+#splash .logo{animation:sp .7s ease}
+@keyframes sp{0%{opacity:0;transform:scale(.92)}60%{opacity:1;transform:scale(1.02)}100%{opacity:1;transform:scale(1)}}
+
+/* ── Pages ── */
+.pg{display:none}.pg.a{display:block}
+
+/* ── Auth ── */
+.ao{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.ac{background:var(--bg2);border:1px solid var(--brd);border-radius:var(--r2);padding:36px 40px;width:100%;max-width:420px;box-shadow:var(--sh2)}
+.at{color:var(--tx2);font-size:13px;margin:6px 0 26px}
+
+/* ── App Shell ── */
+.shell{display:grid;grid-template-columns:220px 1fr;grid-template-rows:54px 1fr;min-height:100vh}
+.top{grid-column:1/-1;position:sticky;top:0;height:54px;background:var(--bg1);border-bottom:1px solid var(--brd);display:flex;align-items:center;padding:0 20px;gap:12px;z-index:100}
+.top-sp{flex:1}
+.top-u{font-size:13px;color:var(--tx2);display:flex;align-items:center;gap:14px}
+.side{grid-row:2;background:var(--bg1);border-right:1px solid var(--brd);padding:16px 10px;overflow-y:auto}
+.nl{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.2px;color:var(--tx3);padding:0 10px;margin:18px 0 8px}.nl:first-child{margin-top:0}
+.nv{display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;background:0;border:0;border-radius:var(--r);color:var(--tx2);font-size:13px;font-family:inherit;cursor:pointer;text-align:left;transition:background var(--tr),color var(--tr)}
+.nv:hover{background:rgba(255,255,255,.04);color:var(--tx)}
+.nv.a{background:var(--blue-d);color:var(--blue);font-weight:600}
+.mn{grid-row:2;padding:28px 32px;overflow-y:auto;max-height:calc(100vh - 54px)}
+
+/* ── Sections ── */
+.sh{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px}
+.st{font-size:22px;font-weight:600}.ss{font-size:13px;color:var(--tx2);margin-top:4px}
+
+/* ── Cards ── */
+.cd{background:var(--bg2);border:1px solid var(--brd);border-radius:var(--r2);box-shadow:var(--sh);margin-bottom:20px}
+.ch{padding:14px 20px;border-bottom:1px solid var(--brd);display:flex;align-items:center;justify-content:space-between}
+.ct{font-weight:600;font-size:14px}
+.cb{padding:20px}
+
+/* ── Stats ── */
+.sr{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.sc{background:var(--bg2);border:1px solid var(--brd);border-radius:var(--r2);padding:18px 20px;box-shadow:var(--sh);position:relative;overflow:hidden}
+.sc::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:var(--grad)}
+.sv{font-size:28px;font-weight:700}.sl{font-size:12px;color:var(--tx2);margin-top:4px}
+
+/* ── Forms ── */
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.fg{margin-bottom:16px}
+.fl{display:block;font-size:13px;font-weight:500;color:var(--tx2);margin-bottom:6px}
+.rq{color:var(--red)}
+.fc{width:100%;padding:10px 14px;border:1.5px solid var(--brd);border-radius:var(--r);font-size:14px;font-family:inherit;color:var(--tx);background:var(--bg3);outline:0;transition:border-color var(--tr),box-shadow var(--tr)}
+.fc:focus{border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-g)}
+.fc.er{border-color:var(--red);box-shadow:0 0 0 3px rgba(248,113,113,.15)}
+.fc::placeholder{color:var(--tx3)}
+input[type=date]::-webkit-calendar-picker-indicator,input[type=time]::-webkit-calendar-picker-indicator{filter:invert(.7)}
+select.fc{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12'%3E%3Cpath fill='%2374748a' d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
+select.fc option{background:var(--bg2);color:var(--tx)}
+textarea.fc{resize:vertical;min-height:72px}
+.fh{font-size:12px;color:var(--tx3);margin-top:4px}
+.fe{font-size:12px;color:var(--red);margin-top:4px;display:none}
+.me{background:var(--red-d);border:1px solid rgba(248,113,113,.2);border-radius:var(--r);color:var(--red);padding:10px 14px;font-size:13px;margin-bottom:14px;display:none}
+.ms{background:var(--grn-d);border:1px solid rgba(52,211,153,.2);border-radius:var(--r);color:var(--grn);padding:10px 14px;font-size:13px;margin-bottom:14px;display:none}
+
+/* ── Toast ── */
+.tw{position:fixed;bottom:24px;right:24px;z-index:500;display:flex;flex-direction:column;gap:8px}
+.to{background:var(--bg2);border:1px solid var(--brd);color:var(--tx);padding:12px 18px;border-radius:var(--r);font-size:13px;box-shadow:var(--sh2);animation:ti .25s ease;max-width:320px}
+.to.s{border-left:3px solid var(--grn)}.to.e{border-left:3px solid var(--red)}.to.f{animation:tout .25s ease forwards}
+@keyframes ti{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes tout{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(10px)}}
+
+/* ── Buttons ── */
+.b{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border:1.5px solid transparent;border-radius:var(--r);font-size:13px;font-family:inherit;font-weight:600;cursor:pointer;transition:all var(--tr);line-height:1}
+.b:hover{filter:brightness(1.1)}.b:active{transform:scale(.98)}
+.bp{background:var(--blue);color:#fff;border:0}
+.bg{background:var(--grn);color:var(--bg0)}
+.br{background:var(--red);color:var(--bg0)}
+.bo{background:0;color:var(--tx2);border-color:var(--brd)}.bo:hover{border-color:var(--tx2);color:var(--tx)}
+.bs{padding:6px 12px;font-size:12px}
+.bb{width:100%;justify-content:center}
+.bd{background:rgba(255,255,255,.04);color:var(--tx2);border:1px dashed var(--brd);width:100%;justify-content:center;margin-top:12px;font-weight:500}
+.bd:hover{border-color:var(--blue);color:var(--blue);background:var(--blue-d)}
+
+/* ── Table ── */
+.tbw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead tr{background:rgba(255,255,255,.03)}
+thead th{padding:11px 14px;text-align:left;color:var(--tx2);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;white-space:nowrap}
+tbody tr{border-bottom:1px solid var(--brd)}tbody tr:last-child{border-bottom:0}tbody tr:hover{background:rgba(255,255,255,.02)}
+tbody td{padding:11px 14px;vertical-align:middle}
+
+/* ── Badge ── */
+.ba{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.ba-b{background:var(--blue-d);color:var(--blue)}
+.ba-g{background:var(--grn-d);color:var(--grn)}
+.ba-a{background:var(--amb-d);color:var(--amb)}
+.ba-r{background:var(--red-d);color:var(--red)}
+
+/* ── Filter ── */
+.fb{display:flex;gap:10px;margin-bottom:14px;align-items:center}.fb .fc{margin-bottom:0}
+
+/* ── Modal ── */
+.mo{position:fixed;inset:0;background:rgba(0,0,0,.65);backdrop-filter:blur(4px);z-index:200;display:none;align-items:center;justify-content:center;padding:20px}
+.mo.v{display:flex}
+.mb{background:var(--bg2);border:1px solid var(--brd);border-radius:var(--r2);box-shadow:var(--sh2);width:100%;max-width:500px;max-height:90vh;overflow-y:auto;animation:mi .2s ease}
+@keyframes mi{from{opacity:0;transform:scale(.96) translateY(10px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.mh{padding:18px 22px;border-bottom:1px solid var(--brd);display:flex;align-items:center;justify-content:space-between}
+.mt{font-weight:600;font-size:15px}.md{padding:22px}
+
+/* ── Info box ── */
+.ib{background:rgba(0,0,0,.3);border:1px solid var(--brd);border-radius:var(--r);padding:14px 16px;font-family:'Courier New',monospace;font-size:12px;color:var(--grn);line-height:1.8;margin-bottom:16px}
+.ib .c{color:var(--tx3)}.ib .k{color:#7ec8e3}.ib .v{color:#fbbf24}
+
+/* ── Empty ── */
+.em{text-align:center;padding:40px 20px;color:var(--tx3)}
+.ei{font-size:20px;margin-bottom:8px;opacity:.4}
+.et{font-size:14px;color:var(--tx2)}
+
+/* ── PW bars ── */
+.pb{display:flex;gap:4px;margin-top:6px}.pw{height:3px;flex:1;border-radius:2px;background:var(--brd);transition:background .18s}
+
+/* ── Progress ── */
+.pt{height:6px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden}
+.pf{height:100%;border-radius:3px;background:var(--grad);transition:width .4s ease}
+
+/* ── Goals ── */
+.gi{background:rgba(255,255,255,.02);border:1px solid var(--brd);border-radius:var(--r);padding:16px 18px;margin-bottom:12px}
+.gh{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.gl{font-weight:500;font-size:14px}.gv{font-size:13px;color:var(--tx2)}
+.gs{font-size:12px;color:var(--blue);margin-top:8px;padding:8px 12px;background:var(--blue-d);border-radius:var(--r)}
+
+/* ── Week chart ── */
+.wc{display:flex;gap:6px;align-items:flex-end;height:120px;padding:0 4px}
+.ww{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:flex-end}
+.wb{width:100%;max-width:40px;border-radius:4px 4px 0 0;background:var(--grad);transition:height .3s ease;min-height:2px}
+.we{background:rgba(255,255,255,.06)}
+.wl{font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.5px}
+.wh{font-size:10px;color:var(--tx2)}
+
+/* ── A11y ── */
+*:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{transition-duration:.01ms!important;animation-duration:.01ms!important}}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:0}::-webkit-scrollbar-thumb{background:var(--brd);border-radius:3px}
+@media(max-width:768px){.shell{grid-template-columns:1fr}.side{display:none}.sr{grid-template-columns:repeat(2,1fr)}.fr{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+
+<!-- ═══ SPLASH ═══ -->
+<div id="splash"><img class="logo logo-lg" src="snoozrwhite.png" alt="snoozr"></div>
+
+<!-- ═══ TOASTS ═══ -->
+<div class="tw" id="toastWrap"></div>
+
+<!-- ═══ EDIT MODAL ═══ -->
+<div class="mo" id="editModal"><div class="mb"><div class="mh"><span class="mt">Edit Sleep Entry</span><button class="b bo bs" onclick="closeEditModal()">Close</button></div><div class="md">
+  <input type="hidden" id="editId">
+  <div class="me" id="editErr"></div>
+  <div class="fr"><div class="fg"><label class="fl" for="eDate">Date <span class="rq">*</span></label><input class="fc" type="date" id="eDate"></div><div class="fg"><label class="fl" for="eTag">Tag <span class="rq">*</span></label><select class="fc" id="eTag"><option value="">--</option></select></div></div>
+  <div class="fr"><div class="fg"><label class="fl" for="eBed">Bedtime <span class="rq">*</span></label><input class="fc" type="time" id="eBed"></div><div class="fg"><label class="fl" for="eWake">Wake <span class="rq">*</span></label><input class="fc" type="time" id="eWake"></div></div>
+  <div class="fg"><label class="fl" for="eQ">Quality</label><select class="fc" id="eQ"><option value="great">Great</option><option value="okay" selected>Okay</option><option value="poor">Poor</option><option value="bad">Bad</option></select></div>
+  <div class="fg"><label class="fl" for="eNotes">Notes</label><textarea class="fc" id="eNotes" maxlength="300"></textarea></div>
+  <div style="display:flex;gap:10px"><button class="b bg" onclick="saveEdit()">Save Changes</button><button class="b bo" onclick="closeEditModal()">Cancel</button></div>
+</div></div></div>
+
+<!-- ═══ DELETE MODAL ═══ -->
+<div class="mo" id="deleteModal"><div class="mb" style="max-width:400px"><div class="mh"><span class="mt">Confirm Delete</span></div><div class="md">
+  <p id="deleteMsg" style="margin-bottom:18px;color:var(--tx2)"></p>
+  <div style="display:flex;gap:10px;justify-content:flex-end"><button class="b bo" onclick="closeDM()">Cancel</button><button class="b br" id="delBtn">Delete</button></div>
+</div></div></div>
+
+<!-- ═══ LOGIN ═══ -->
+<div class="pg a" id="page-login"><div class="ao"><div class="ac">
+  <img class="logo logo-auth" src="snoozrwhite.png" alt="snoozr">
+  <div class="at">Track your sleep, at your own pace.</div>
+  <div class="me" id="loginErr" role="alert"></div>
+  <div class="fg"><label class="fl" for="loginEmail">Email <span class="rq">*</span></label><input class="fc" type="email" id="loginEmail" placeholder="you@example.com" autocomplete="email" aria-required="true"><div class="fe" id="loginEmailErr"></div></div>
+  <div class="fg"><label class="fl" for="loginPw">Password <span class="rq">*</span></label><input class="fc" type="password" id="loginPw" placeholder="Your password" autocomplete="current-password" aria-required="true"><div class="fe" id="loginPwErr"></div></div>
+  <button class="b bp bb" style="margin-bottom:14px" onclick="doLogin()">Sign In</button>
+  <p style="text-align:center;font-size:13px;color:var(--tx2)">No account? <button class="b bo bs" onclick="showPage('page-register')" style="margin-left:6px">Create account</button></p>
+  <button class="b bd" onclick="fillDemo()">Demo Login (Iggy)</button>
+</div></div></div>
+
+<!-- ═══ REGISTER ═══ -->
+<div class="pg" id="page-register"><div class="ao"><div class="ac">
+  <img class="logo logo-auth" src="snoozrwhite.png" alt="snoozr">
+  <div class="at">Create your account to get started.</div>
+  <div class="me" id="registerErr" role="alert"></div>
+  <div class="fr"><div class="fg"><label class="fl" for="regFirst">First name <span class="rq">*</span></label><input class="fc" type="text" id="regFirst" placeholder="Jane" autocomplete="given-name"><div class="fe" id="regFirstErr"></div></div><div class="fg"><label class="fl" for="regLast">Last name <span class="rq">*</span></label><input class="fc" type="text" id="regLast" placeholder="Smith" autocomplete="family-name"><div class="fe" id="regLastErr"></div></div></div>
+  <div class="fg"><label class="fl" for="regEmail">Email <span class="rq">*</span></label><input class="fc" type="email" id="regEmail" placeholder="you@example.com" autocomplete="email"><div class="fe" id="regEmailErr"></div></div>
+  <div class="fg"><label class="fl" for="regPw">Password <span class="rq">*</span></label><input class="fc" type="password" id="regPw" placeholder="Min. 8 chars, include a number" autocomplete="new-password" oninput="updPw(this.value)"><div class="pb"><div class="pw" id="pw1"></div><div class="pw" id="pw2"></div><div class="pw" id="pw3"></div><div class="pw" id="pw4"></div></div><div class="fe" id="regPwErr"></div><div class="fh">At least 8 characters including a number.</div></div>
+  <div class="fg"><label class="fl" for="regConfirm">Confirm password <span class="rq">*</span></label><input class="fc" type="password" id="regConfirm" placeholder="Repeat password" autocomplete="new-password"><div class="fe" id="regConfirmErr"></div></div>
+  <button class="b bp bb" style="margin-bottom:14px" onclick="doRegister()">Create Account</button>
+  <p style="text-align:center;font-size:13px;color:var(--tx2)">Have an account? <button class="b bo bs" onclick="showPage('page-login')" style="margin-left:6px">Sign in</button></p>
+</div></div></div>
+
+<!-- ═══ APP ═══ -->
+<div class="pg" id="page-app"><div class="shell">
+
+  <header class="top">
+    <img class="logo" src="snoozrwhite.png" alt="snoozr">
+    <div class="top-sp"></div>
+    <div class="top-u"><span id="topN"></span><button class="b bo bs" style="color:var(--tx2);border-color:var(--brd)" onclick="doLogout()">Sign out</button></div>
+  </header>
+
+  <nav class="side" aria-label="Main navigation">
+    <div class="nl">Main</div>
+    <button class="nv a" id="nav-dashboard" onclick="goSec('dashboard')" aria-current="page"><svg width="16" height="16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="9" y="1" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="1" y="9" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="9" y="9" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.5"/></svg>Dashboard</button>
+    <button class="nv" id="nav-entries" onclick="goSec('entries')"><svg width="16" height="16" fill="none"><path d="M2 4h12M2 8h12M2 12h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>Sleep Log</button>
+    <button class="nv" id="nav-tags" onclick="goSec('tags')"><svg width="16" height="16" fill="none"><path d="M2 3h5l6 5-5 5-6-5V3z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><circle cx="5.5" cy="5.5" r="1" fill="currentColor"/></svg>Tags</button>
+    <button class="nv" id="nav-goals" onclick="goSec('goals')"><svg width="16" height="16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.5"/><circle cx="8" cy="8" r="3" stroke="currentColor" stroke-width="1.5"/><circle cx="8" cy="8" r=".75" fill="currentColor"/></svg>Goals</button>
+    <button class="nv" id="nav-aidisclosure" onclick="goSec('aidisclosure')"><svg width="16" height="16" fill="none"><path d="M8 1v4M8 11v4M1 8h4M11 8h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.5"/></svg>AI Disclosure</button>
+    <div class="nl">Account</div>
+    <button class="nv" id="nav-settings" onclick="goSec('settings')"><svg width="16" height="16" fill="none"><circle cx="8" cy="8" r="2.5" stroke="currentColor" stroke-width="1.5"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3 3l1.4 1.4M11.5 11.5l1.4 1.4M3 13l1.4-1.4M11.5 4.5l1.4-1.4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>Settings</button>
+    <div style="margin-top:28px"><div class="ib"><span class="c">// Data store</span><br><span class="k">type:</span> <span class="v">"localStorage"</span><br><span class="c">// Replace with:</span><br><span class="c">// PostgreSQL + Flask</span></div></div>
+  </nav>
+
+  <main class="mn">
+
+    <!-- ── DASHBOARD ── -->
+    <section id="sec-dashboard">
+      <div class="sh"><div><div class="st" id="dashG">Dashboard</div><div class="ss">Your sleep overview.</div></div><button class="b bp" onclick="goSec('entries')">+ Log Sleep</button></div>
+      <div class="sr">
+        <div class="sc"><div class="sv" id="sE">0</div><div class="sl">Total entries</div></div>
+        <div class="sc"><div class="sv" id="sA">0h</div><div class="sl">Avg sleep / night</div></div>
+        <div class="sc"><div class="sv" id="sT">0</div><div class="sl">Tags tracked</div></div>
+        <div class="sc"><div class="sv" id="sW">0h</div><div class="sl">Hours this week</div></div>
+      </div>
+      <div class="cd"><div class="ch"><span class="ct">This Week</span></div><div class="cb" id="wkC"></div></div>
+      <div class="ib"><span class="c">-- SQL: load user's sleep entries (READ):</span><br><span class="k">SELECT</span> e.*, t.name <span class="k">FROM</span> entries e<br><span class="k">JOIN</span> tags t <span class="k">ON</span> e.tag_id = t.id<br><span class="k">WHERE</span> e.user_id = <span class="v">:uid</span> <span class="k">ORDER BY</span> e.date <span class="k">DESC</span>;<br><br><span class="c">-- ORM: Entry.query.filter_by(user_id=uid).order_by(Entry.date.desc()).all()</span></div>
+      <div class="cd"><div class="ch"><span class="ct">Recent Entries</span><button class="b bo bs" onclick="goSec('entries')">View all</button></div><div id="dashR"><div class="em"><div class="ei">---</div><div class="et">No entries yet.</div></div></div></div>
+    </section>
+
+    <!-- ── SLEEP LOG ── -->
+    <section id="sec-entries" style="display:none">
+      <div class="sh"><div><div class="st">Sleep Log</div><div class="ss">Create, view, edit and delete your sleep entries.</div></div></div>
+      <div class="cd"><div class="ch"><span class="ct">Log a Night</span></div><div class="cb">
+        <div class="me" id="entryErr"></div><div class="ms" id="entryOk"></div>
+        <div class="fr"><div class="fg"><label class="fl" for="sDate">Date <span class="rq">*</span></label><input class="fc" type="date" id="sDate"><div class="fe" id="sDateErr"></div></div><div class="fg"><label class="fl" for="sTag">Tag <span class="rq">*</span></label><select class="fc" id="sTag"><option value="">-- select --</option></select><div class="fe" id="sTagErr"></div></div></div>
+        <div class="fr"><div class="fg"><label class="fl" for="sBed">Bedtime <span class="rq">*</span></label><input class="fc" type="time" id="sBed" value="23:00"><div class="fe" id="sBedErr"></div></div><div class="fg"><label class="fl" for="sWk">Wake <span class="rq">*</span></label><input class="fc" type="time" id="sWk" value="07:00"><div class="fe" id="sWkErr"></div></div></div>
+        <div class="fg"><label class="fl" for="sQ">Quality</label><select class="fc" id="sQ"><option value="great">Great</option><option value="okay" selected>Okay</option><option value="poor">Poor</option><option value="bad">Bad</option></select></div>
+        <div class="fg"><label class="fl" for="sNt">Notes (optional)</label><textarea class="fc" id="sNt" placeholder="How did you sleep?" maxlength="300"></textarea><div class="fh">Max 300 characters.</div></div>
+        <button class="b bp" onclick="addEntry()">Save Entry</button>
+      </div></div>
+      <div class="cd"><div class="ch"><span class="ct">All Entries</span></div><div class="cb" style="padding-bottom:0">
+        <div class="fb"><input class="fc" type="search" id="srch" placeholder="Search notes or tags..." style="flex:1" oninput="rTbl()"><select class="fc" id="fTag" style="width:170px" onchange="rTbl()"><option value="">All tags</option></select><select class="fc" id="srt" style="width:150px" onchange="rTbl()"><option value="newest">Newest first</option><option value="oldest">Oldest first</option><option value="longest">Longest sleep</option></select></div>
+        <div class="tbw"><table><thead><tr><th>Date</th><th>Tag</th><th>Bedtime</th><th>Wake</th><th>Duration</th><th>Quality</th><th>Actions</th></tr></thead><tbody id="eBody"></tbody></table></div>
+        <div style="padding:10px 0;font-size:12px;color:var(--tx3)"><span id="eCnt">0 entries</span></div>
+      </div></div>
+    </section>
+
+    <!-- ── TAGS ── -->
+    <section id="sec-tags" style="display:none">
+      <div class="sh"><div><div class="st">Tags</div><div class="ss">Categorise your entries (e.g. School Night, Weekend, Nap).</div></div></div>
+      <div class="cd"><div class="ch"><span class="ct">Add a Tag</span></div><div class="cb">
+        <div class="me" id="tagErr"></div>
+        <div style="display:flex;gap:12px;align-items:flex-end"><div class="fg" style="flex:1;margin-bottom:0"><label class="fl" for="tN">Tag name <span class="rq">*</span></label><input class="fc" type="text" id="tN" placeholder="e.g. School Night"><div class="fe" id="tNErr"></div></div><div class="fg" style="width:130px;margin-bottom:0"><label class="fl" for="tC">Colour</label><select class="fc" id="tC"><option value="blue">Blue</option><option value="green">Green</option><option value="amber">Amber</option><option value="red">Red</option></select></div><button class="b bp" onclick="addTag()" style="flex-shrink:0">Add Tag</button></div>
+      </div></div>
+      <div class="cd"><div class="ch"><span class="ct">Your Tags</span></div><div class="tbw"><table><thead><tr><th>Tag</th><th>Entries</th><th>Total Hours</th><th>Actions</th></tr></thead><tbody id="tBody"></tbody></table></div></div>
+    </section>
+
+    <!-- ── GOALS ── -->
+    <section id="sec-goals" style="display:none">
+      <div class="sh"><div><div class="st">Goals</div><div class="ss">Set reachable targets. We'll break them into manageable steps.</div></div></div>
+      <div class="cd"><div class="ch"><span class="ct">Set a Sleep Goal</span></div><div class="cb">
+        <div class="me" id="goalErr"></div>
+        <div class="fr"><div class="fg"><label class="fl" for="gT">Goal type <span class="rq">*</span></label><select class="fc" id="gT"><option value="avg_hours">Average hours per night</option><option value="bedtime">Target bedtime</option><option value="weekly_hours">Total weekly hours</option></select></div><div class="fg"><label class="fl" for="gV">Target <span class="rq">*</span></label><input class="fc" type="text" id="gV" placeholder="e.g. 8 or 23:00"><div class="fh">Hours (e.g. 8) or time (e.g. 23:00).</div></div></div>
+        <button class="b bp" onclick="addGoal()">Set Goal</button>
+      </div></div>
+      <div class="cd"><div class="ch"><span class="ct">Your Goals</span></div><div class="cb" id="gCont"><div class="em"><div class="ei">---</div><div class="et">No goals set yet.</div></div></div></div>
+    </section>
+
+    <!-- ── AI DISCLOSURE ── -->
+    <section id="sec-aidisclosure" style="display:none">
+      <div class="sh"><div><div class="st">AI Disclosure</div><div class="ss">Transparency statement on AI usage in this project.</div></div></div>
+      <div class="cd">
+        <div class="cb">
+          <!-- EDIT YOUR AI DISCLOSURE CONTENT BELOW -->
+          <h1 style="font-size:20px;font-weight:600;margin-bottom:16px;color:var(--tx)">AI Usage Declaration</h1>
+          <p style="color:var(--tx2);line-height:1.7">
+
+          </p>
+          <!-- END AI DISCLOSURE CONTENT -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ── SETTINGS ── -->
+    <section id="sec-settings" style="display:none">
+      <div class="sh"><div><div class="st">Settings</div><div class="ss">Update your profile details.</div></div></div>
+      <div class="cd" style="max-width:480px"><div class="ch"><span class="ct">Profile</span></div><div class="cb">
+        <div class="fr"><div class="fg"><label class="fl" for="sf">First name</label><input class="fc" type="text" id="sf"></div><div class="fg"><label class="fl" for="sl">Last name</label><input class="fc" type="text" id="sl"></div></div>
+        <div class="fg"><label class="fl" for="se">Email (read only)</label><input class="fc" type="email" id="se" disabled style="opacity:.5;cursor:not-allowed"></div>
+        <button class="b bp" onclick="savePro()">Save Changes</button>
+      </div></div>
+      <div class="cd" style="max-width:480px"><div class="ch"><span class="ct">Change Password</span></div><div class="cb">
+        <div class="ib" style="margin-bottom:16px"><span class="c">// Passwords hashed before storage.</span><br><span class="c">// Production: use flask_bcrypt</span><br><span class="k">from</span> flask_bcrypt <span class="k">import</span> Bcrypt<br>hash = bcrypt.<span class="v">generate_password_hash</span>(pw)</div>
+        <div class="fg"><label class="fl" for="cP">Current password</label><input class="fc" type="password" id="cP"></div>
+        <div class="fg"><label class="fl" for="nP">New password</label><input class="fc" type="password" id="nP"></div>
+        <div class="fg"><label class="fl" for="cfP">Confirm new</label><input class="fc" type="password" id="cfP"></div>
+        <div class="me" id="pwErr"></div>
+        <button class="b bp" onclick="chgPw()">Update Password</button>
+      </div></div>
+      <div class="cd" style="max-width:480px"><div class="ch"><span class="ct">Data &amp; Export</span></div><div class="cb">
+        <button class="b bo" onclick="expCSV()" style="margin-right:10px">Export CSV</button>
+        <button class="b br" onclick="delAll()">Delete All My Data</button>
+      </div></div>
+    </section>
+
+  </main>
+</div></div>
+
+<script>
+'use strict';
+
+/* ═══ DATA LAYER ═══ */
+const K={u:'snz_u',t:'snz_t',e:'snz_e',g:'snz_g',uid:'snz_uid'};
+const ld=k=>{try{return JSON.parse(localStorage.getItem(k)||'null')}catch{return null}};
+const sv=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+const aU=()=>ld(K.u)||[];const aT=()=>ld(K.t)||[];const aE=()=>ld(K.e)||[];const aG=()=>ld(K.g)||[];
+let cu=null;
+const mT=()=>aT().filter(t=>t.ui===cu.id);
+const mE=()=>aE().filter(e=>e.ui===cu.id);
+const mG=()=>aG().filter(g=>g.ui===cu.id);
+const sU=d=>sv(K.u,d);const sT=d=>sv(K.t,d);const sE=d=>sv(K.e,d);const sG=d=>sv(K.g,d);
+const gid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+
+/* ═══ HASH ═══ */
+function simHash(p){const s='snz26_'+p.length;let h=0x811c9dc5;for(let i=0;i<(s+p).length;i++){h^=(s+p).charCodeAt(i);h=Math.imul(h,0x01000193)>>>0}return'$s$'+h.toString(16).padStart(8,'0')+btoa(p.split('').reverse().join('')).replace(/=/g,'').slice(0,20)}
+function chkH(p,h){return simHash(p)===h}
+
+/* ═══ SESSION ═══ */
+function ldUser(){const id=localStorage.getItem(K.uid);if(!id)return null;return aU().find(u=>u.id===id)||null}
+function logIn(u){cu=u;localStorage.setItem(K.uid,u.id)}
+function clrSes(){cu=null;localStorage.removeItem(K.uid)}
+
+/* ═══ SEED ═══ */
+function seed(){
+  if(aU().find(u=>u.em==='iggy@snoozr.com'))return;
+  const uid='demo_iggy';const now=new Date();
+  const us=aU();us.push({id:uid,fn:'Iggy',ln:'Demo',em:'iggy@snoozr.com',ph:simHash('Iggy12345!')});sU(us);
+  const ts=aT();
+  [['t_sch','School Night','blue'],['t_wkd','Weekend','green'],['t_nap','Nap','amber']].forEach(([id,n,c])=>ts.push({id,ui:uid,n,c}));
+  sT(ts);
+  const es=aE();
+  [{t:'t_sch',d:0,b:'23:30',w:'06:45',q:'okay',nt:'Stayed up finishing assignment'},
+   {t:'t_sch',d:1,b:'23:00',w:'06:50',q:'okay',nt:''},
+   {t:'t_sch',d:2,b:'22:45',w:'07:00',q:'great',nt:'Felt well rested'},
+   {t:'t_wkd',d:3,b:'00:30',w:'09:15',q:'great',nt:'Slept in'},
+   {t:'t_wkd',d:4,b:'01:00',w:'09:30',q:'okay',nt:''},
+   {t:'t_sch',d:5,b:'23:15',w:'06:30',q:'poor',nt:'Woke up multiple times'},
+   {t:'t_nap',d:5,b:'15:00',w:'15:45',q:'okay',nt:'Quick nap after school'},
+   {t:'t_sch',d:6,b:'22:30',w:'06:45',q:'great',nt:''},
+   {t:'t_sch',d:7,b:'23:45',w:'06:30',q:'bad',nt:'Barely slept, anxious about exam'},
+   {t:'t_wkd',d:8,b:'00:15',w:'08:45',q:'okay',nt:''}
+  ].forEach(i=>{const dt=new Date(now);dt.setDate(dt.getDate()-i.d);const dur=cDur(i.b,i.w);es.push({id:gid(),ui:uid,ti:i.t,dt:dt.toISOString().split('T')[0],bt:i.b,wt:i.w,dm:dur,q:i.q,nt:i.nt,ca:dt.toISOString()})});
+  sE(es);
+  const gs=aG();gs.push({id:gid(),ui:uid,tp:'avg_hours',tg:'8',ca:new Date().toISOString()});sG(gs);
+}
+
+/* ═══ NAV ═══ */
+function showPage(id){document.querySelectorAll('.pg').forEach(p=>p.classList.remove('a'));document.getElementById(id).classList.add('a')}
+function goSec(n){
+  document.querySelectorAll('section[id^="sec-"]').forEach(s=>s.style.display='none');
+  document.querySelectorAll('.nv').forEach(b=>{b.classList.remove('a');b.removeAttribute('aria-current')});
+  const sec=document.getElementById('sec-'+n),nav=document.getElementById('nav-'+n);
+  if(sec)sec.style.display='block';if(nav){nav.classList.add('a');nav.setAttribute('aria-current','page')}
+  if(n==='dashboard')rDash();if(n==='entries'){popTags();rTbl()}if(n==='tags')rTagsTbl();if(n==='goals')rGoals();if(n==='settings')popSet();
+}
+
+/* ═══ AUTH HELPERS ═══ */
+function shE(iid,eid,msg){const i=document.getElementById(iid),e=document.getElementById(eid);if(i&&msg)i.classList.add('er');if(e){e.textContent=msg||'';e.style.display=msg?'block':'none'}}
+function clE(iid,eid){const i=document.getElementById(iid),e=document.getElementById(eid);if(i)i.classList.remove('er');if(e){e.textContent='';e.style.display='none'}}
+function isEm(s){return/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s)}
+
+function doLogin(){
+  const em=document.getElementById('loginEmail').value.trim(),pw=document.getElementById('loginPw').value,eb=document.getElementById('loginErr');
+  clE('loginEmail','loginEmailErr');clE('loginPw','loginPwErr');eb.style.display='none';
+  let ok=true;
+  if(!em){shE('loginEmail','loginEmailErr','Email is required.');ok=false}else if(!isEm(em)){shE('loginEmail','loginEmailErr','Enter a valid email.');ok=false}
+  if(!pw){shE('loginPw','loginPwErr','Password is required.');ok=false}
+  if(!ok)return;
+  const u=aU().find(u=>u.em.toLowerCase()===em.toLowerCase());
+  if(!u||!chkH(pw,u.ph)){eb.textContent='Incorrect email or password.';eb.style.display='block';return}
+  logIn(u);boot();
+}
+
+function fillDemo(){document.getElementById('loginEmail').value='iggy@snoozr.com';document.getElementById('loginPw').value='Iggy12345!';doLogin()}
+
+function doRegister(){
+  const fn=document.getElementById('regFirst').value.trim(),ln=document.getElementById('regLast').value.trim(),em=document.getElementById('regEmail').value.trim(),pw=document.getElementById('regPw').value,cf=document.getElementById('regConfirm').value,eb=document.getElementById('registerErr');
+  ['regFirst','regLast','regEmail','regPw','regConfirm'].forEach(id=>clE(id,id+'Err'));eb.style.display='none';
+  let ok=true;
+  if(!fn){shE('regFirst','regFirstErr','Required.');ok=false}
+  if(!ln){shE('regLast','regLastErr','Required.');ok=false}
+  if(!em){shE('regEmail','regEmailErr','Required.');ok=false}else if(!isEm(em)){shE('regEmail','regEmailErr','Invalid email.');ok=false}else if(aU().find(u=>u.em.toLowerCase()===em.toLowerCase())){shE('regEmail','regEmailErr','Email already exists.');ok=false}
+  if(!pw){shE('regPw','regPwErr','Required.');ok=false}else if(pw.length<8){shE('regPw','regPwErr','Min 8 characters.');ok=false}else if(!/\d/.test(pw)){shE('regPw','regPwErr','Include a number.');ok=false}
+  if(pw!==cf){shE('regConfirm','regConfirmErr','Passwords do not match.');ok=false}
+  if(!ok)return;
+  const nu={id:gid(),fn,ln,em,ph:simHash(pw)};const us=aU();us.push(nu);sU(us);logIn(nu);boot();
+}
+function doLogout(){clrSes();showPage('page-login');document.getElementById('loginEmail').value='';document.getElementById('loginPw').value=''}
+function updPw(v){let s=0;if(v.length>=8)s++;if(v.length>=12)s++;if(/\d/.test(v))s++;if(/[^a-zA-Z0-9]/.test(v))s++;const c=['','var(--red)','var(--amb)','var(--amb)','var(--grn)'];for(let i=1;i<=4;i++)document.getElementById('pw'+i).style.background=i<=s?(c[s]||c[4]):'var(--brd)'}
+
+/* ═══ BOOT ═══ */
+function boot(){
+  showPage('page-app');
+  document.getElementById('topN').textContent=cu.fn+' '+cu.ln;
+  const h=new Date().getHours();
+  document.getElementById('dashG').textContent=(h<12?'Good morning':h<17?'Good afternoon':'Good evening')+', '+cu.fn;
+  document.getElementById('sDate').value=new Date().toISOString().split('T')[0];
+  goSec('dashboard');
+}
+
+/* ═══ UTILS ═══ */
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function cDur(b,w){let[bh,bm]=b.split(':').map(Number),[wh,wm]=w.split(':').map(Number);let bx=bh*60+bm,wx=wh*60+wm;if(wx<=bx)wx+=1440;return wx-bx}
+function fDur(m){const h=Math.floor(m/60),mn=m%60;return h+'h'+(mn?' '+mn+'m':'')}
+function qBa(q){const m={great:'ba-g',okay:'ba-b',poor:'ba-a',bad:'ba-r'};return`<span class="ba ${m[q]||'ba-b'}">${esc(q)}</span>`}
+function tBa(t){if(!t)return'<span class="ba ba-b">--</span>';const m={blue:'ba-b',green:'ba-g',amber:'ba-a',red:'ba-r'};return`<span class="ba ${m[t.c]||'ba-b'}">${esc(t.n)}</span>`}
+function toast(msg,tp='s'){const w=document.getElementById('toastWrap'),el=document.createElement('div');el.className='to '+tp;el.textContent=msg;w.appendChild(el);setTimeout(()=>{el.classList.add('f');setTimeout(()=>el.remove(),300)},3000)}
+
+/* ═══ DASHBOARD ═══ */
+function rDash(){
+  const es=mE(),ts=mT();
+  const tm=es.reduce((a,e)=>a+e.dm,0),avg=es.length?tm/es.length:0;
+  const now=new Date(),wa=new Date(now);wa.setDate(wa.getDate()-7);
+  const we=es.filter(e=>new Date(e.dt)>=wa),wm=we.reduce((a,e)=>a+e.dm,0);
+  document.getElementById('sE').textContent=es.length;
+  document.getElementById('sA').textContent=(avg/60).toFixed(1)+'h';
+  document.getElementById('sT').textContent=ts.length;
+  document.getElementById('sW').textContent=(wm/60).toFixed(1)+'h';
+  rWk(es);
+  const rc=[...es].sort((a,b)=>new Date(b.dt)-new Date(a.dt)).slice(0,5),el=document.getElementById('dashR');
+  if(!rc.length){el.innerHTML='<div class="em"><div class="ei">---</div><div class="et">No entries yet.</div></div>';return}
+  let h='<table><thead><tr><th>Date</th><th>Tag</th><th>Duration</th><th>Quality</th></tr></thead><tbody>';
+  rc.forEach(e=>{const t=ts.find(x=>x.id===e.ti);h+=`<tr><td>${esc(e.dt)}</td><td>${tBa(t)}</td><td>${fDur(e.dm)}</td><td>${qBa(e.q)}</td></tr>`});
+  h+='</tbody></table>';el.innerHTML=h;
+}
+function rWk(es){
+  const c=document.getElementById('wkC'),dn=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],now=new Date();
+  let dd=[];for(let i=6;i>=0;i--){const d=new Date(now);d.setDate(d.getDate()-i);const ds=d.toISOString().split('T')[0];const dm=es.filter(e=>e.dt===ds).reduce((a,e)=>a+e.dm,0);dd.push({l:dn[d.getDay()],h:dm/60})}
+  const mx=Math.max(...dd.map(d=>d.h),1);
+  let h='<div class="wc">';dd.forEach(d=>{const p=(d.h/mx)*100;h+=`<div class="ww"><div class="wh">${d.h>0?d.h.toFixed(1):''}</div><div class="wb${d.h===0?' we':''}" style="height:${Math.max(p,3)}%"></div><div class="wl">${d.l}</div></div>`});
+  h+='</div>';c.innerHTML=h;
+}
+
+/* ═══ ENTRY CRUD ═══ */
+function addEntry(){
+  const dt=document.getElementById('sDate').value,ti=document.getElementById('sTag').value,bt=document.getElementById('sBed').value,wt=document.getElementById('sWk').value,q=document.getElementById('sQ').value,nt=document.getElementById('sNt').value.trim().slice(0,300),eb=document.getElementById('entryErr');
+  eb.style.display='none';clE('sDate','sDateErr');clE('sTag','sTagErr');clE('sBed','sBedErr');clE('sWk','sWkErr');
+  let ok=true;
+  if(!dt){shE('sDate','sDateErr','Required.');ok=false}else if(dt>new Date().toISOString().split('T')[0]){shE('sDate','sDateErr','No future dates.');ok=false}
+  if(!ti){shE('sTag','sTagErr','Select a tag.');ok=false}
+  if(!bt){shE('sBed','sBedErr','Required.');ok=false}
+  if(!wt){shE('sWk','sWkErr','Required.');ok=false}
+  if(!ok)return;
+  const dm=cDur(bt,wt);if(dm>960){eb.textContent='Duration too long. Check times.';eb.style.display='block';return}
+  const es=aE();es.push({id:gid(),ui:cu.id,ti,dt,bt,wt,dm,q,nt,ca:new Date().toISOString()});sE(es);
+  document.getElementById('sTag').value='';document.getElementById('sNt').value='';
+  toast('Entry saved.');rTbl();rDash();
+}
+
+function rTbl(){
+  const es=mE(),ts=mT(),sr=(document.getElementById('srch')?.value||'').toLowerCase(),ft=document.getElementById('fTag')?.value||'',so=document.getElementById('srt')?.value||'newest';
+  const fl=document.getElementById('fTag');
+  if(fl){const cv=fl.value;fl.innerHTML='<option value="">All tags</option>'+ts.map(t=>`<option value="${t.id}"${t.id===cv?' selected':''}>${esc(t.n)}</option>`).join('')}
+  let rw=es.map(e=>({...e,tag:ts.find(t=>t.id===e.ti)}));
+  if(ft)rw=rw.filter(r=>r.ti===ft);
+  if(sr)rw=rw.filter(r=>(r.tag?.n||'').toLowerCase().includes(sr)||(r.nt||'').toLowerCase().includes(sr));
+  if(so==='oldest')rw.sort((a,b)=>new Date(a.dt)-new Date(b.dt));else if(so==='longest')rw.sort((a,b)=>b.dm-a.dm);else rw.sort((a,b)=>new Date(b.dt)-new Date(a.dt));
+  const tb=document.getElementById('eBody');
+  if(!rw.length){tb.innerHTML=`<tr><td colspan="7"><div class="em"><div class="ei">---</div><div class="et">${es.length?'No matches.':'No entries yet.'}</div></div></td></tr>`}
+  else{tb.innerHTML=rw.map(r=>`<tr><td>${esc(r.dt)}</td><td>${tBa(r.tag)}</td><td>${esc(r.bt)}</td><td>${esc(r.wt)}</td><td>${fDur(r.dm)}</td><td>${qBa(r.q)}</td><td style="white-space:nowrap"><button class="b bo bs" onclick="openEM('${r.id}')">Edit</button> <button class="b br bs" onclick="cfDel('${r.id}')">Delete</button></td></tr>`).join('')}
+  document.getElementById('eCnt').textContent=rw.length+' entr'+(rw.length!==1?'ies':'y')+(rw.length!==es.length?' (filtered)':'');
+}
+
+function openEM(id){
+  const e=mE().find(x=>x.id===id);if(!e)return;
+  document.getElementById('editId').value=id;document.getElementById('eDate').value=e.dt;document.getElementById('eBed').value=e.bt;document.getElementById('eWake').value=e.wt;document.getElementById('eQ').value=e.q;document.getElementById('eNotes').value=e.nt||'';
+  popTags();document.getElementById('eTag').value=e.ti;
+  document.getElementById('editErr').style.display='none';document.getElementById('editModal').classList.add('v');
+}
+function closeEditModal(){document.getElementById('editModal').classList.remove('v')}
+function saveEdit(){
+  const id=document.getElementById('editId').value,dt=document.getElementById('eDate').value,ti=document.getElementById('eTag').value,bt=document.getElementById('eBed').value,wt=document.getElementById('eWake').value,q=document.getElementById('eQ').value,nt=document.getElementById('eNotes').value.trim().slice(0,300),eb=document.getElementById('editErr');
+  eb.style.display='none';
+  if(!dt||!ti||!bt||!wt){eb.textContent='All fields required.';eb.style.display='block';return}
+  const dm=cDur(bt,wt),es=aE(),ix=es.findIndex(e=>e.id===id);
+  if(ix!==-1){es[ix].ti=ti;es[ix].dt=dt;es[ix].bt=bt;es[ix].wt=wt;es[ix].dm=dm;es[ix].q=q;es[ix].nt=nt}
+  sE(es);closeEditModal();toast('Entry updated.');rTbl();rDash();
+}
+
+let pDel=null;
+function cfDel(id){
+  pDel=id;const e=mE().find(x=>x.id===id),t=e?mT().find(x=>x.id===e.ti):null;
+  document.getElementById('deleteMsg').textContent='Delete the '+(t?t.n+' ':'')+' entry from '+(e?.dt||'')+'? This cannot be undone.';
+  document.getElementById('delBtn').onclick=exDel;document.getElementById('deleteModal').classList.add('v');
+}
+function closeDM(){pDel=null;document.getElementById('deleteModal').classList.remove('v')}
+function exDel(){if(!pDel)return;sE(aE().filter(e=>e.id!==pDel));closeDM();toast('Entry deleted.','e');rTbl();rDash()}
+
+/* ═══ TAGS ═══ */
+function addTag(){
+  const n=document.getElementById('tN').value.trim(),c=document.getElementById('tC').value;
+  document.getElementById('tagErr').style.display='none';clE('tN','tNErr');
+  if(!n){shE('tN','tNErr','Required.');return}
+  if(mT().find(t=>t.n.toLowerCase()===n.toLowerCase())){shE('tN','tNErr','Duplicate tag name.');return}
+  const ts=aT();ts.push({id:gid(),ui:cu.id,n,c});sT(ts);
+  document.getElementById('tN').value='';toast('Tag added.');rTagsTbl();popTags();
+}
+function renTag(id){
+  const t=mT().find(x=>x.id===id);if(!t)return;
+  const nn=window.prompt('New name for "'+t.n+'":',t.n);if(!nn||!nn.trim()||nn.trim()===t.n)return;
+  const ts=aT(),ix=ts.findIndex(x=>x.id===id);if(ix!==-1)ts[ix].n=nn.trim();sT(ts);rTagsTbl();popTags();
+}
+function delTag(id){
+  const t=mT().find(x=>x.id===id),cnt=mE().filter(e=>e.ti===id).length;
+  document.getElementById('deleteMsg').textContent='Delete "'+( t?.n||'')+'"? This removes '+cnt+' linked entr'+(cnt!==1?'ies':'y')+'.';
+  document.getElementById('delBtn').onclick=function(){sT(aT().filter(x=>x.id!==id));sE(aE().filter(x=>x.ti!==id));closeDM();toast('Tag deleted.','e');rTagsTbl();rTbl();rDash();popTags()};
+  document.getElementById('deleteModal').classList.add('v');
+}
+function rTagsTbl(){
+  const ts=mT(),es=mE(),tb=document.getElementById('tBody');
+  if(!ts.length){tb.innerHTML='<tr><td colspan="4"><div class="em"><div class="ei">---</div><div class="et">No tags yet.</div></div></td></tr>';return}
+  tb.innerHTML=ts.map(t=>{const lk=es.filter(e=>e.ti===t.id),tm=lk.reduce((a,e)=>a+e.dm,0);return`<tr><td>${tBa(t)}</td><td>${lk.length}</td><td>${(tm/60).toFixed(1)}h</td><td style="white-space:nowrap"><button class="b bo bs" onclick="renTag('${t.id}')">Rename</button> <button class="b br bs" onclick="delTag('${t.id}')">Delete</button></td></tr>`}).join('');
+}
+function popTags(){
+  const ts=mT(),opt='<option value="">-- select --</option>'+ts.map(t=>`<option value="${t.id}">${esc(t.n)}</option>`).join('');
+  ['sTag','eTag'].forEach(id=>{const el=document.getElementById(id);if(!el)return;const cv=el.value;el.innerHTML=opt;if(cv)el.value=cv});
+  const f=document.getElementById('fTag');if(f){const cv=f.value;f.innerHTML='<option value="">All tags</option>'+ts.map(t=>`<option value="${t.id}"${t.id===cv?' selected':''}>${esc(t.n)}</option>`).join('')}
+}
+
+/* ═══ GOALS ═══ */
+function addGoal(){
+  const tp=document.getElementById('gT').value,tg=document.getElementById('gV').value.trim(),eb=document.getElementById('goalErr');eb.style.display='none';
+  if(!tg){eb.textContent='Target required.';eb.style.display='block';return}
+  if(tp==='bedtime'){if(!/^\d{1,2}:\d{2}$/.test(tg)){eb.textContent='Enter as HH:MM.';eb.style.display='block';return}}
+  else{if(isNaN(parseFloat(tg))||parseFloat(tg)<=0){eb.textContent='Enter a positive number.';eb.style.display='block';return}}
+  if(mG().find(g=>g.tp===tp)){eb.textContent='You already have this goal type. Remove it first.';eb.style.display='block';return}
+  const gs=aG();gs.push({id:gid(),ui:cu.id,tp,tg,ca:new Date().toISOString()});sG(gs);
+  document.getElementById('gV').value='';toast('Goal set.');rGoals();
+}
+function delGoal(id){sG(aG().filter(g=>g.id!==id));toast('Goal removed.','e');rGoals()}
+function rGoals(){
+  const gs=mG(),es=mE(),ct=document.getElementById('gCont');
+  if(!gs.length){ct.innerHTML='<div class="em"><div class="ei">---</div><div class="et">No goals set yet.</div></div>';return}
+  const tl={avg_hours:'Average Hours / Night',bedtime:'Target Bedtime',weekly_hours:'Weekly Hours'};
+  let h='';
+  gs.forEach(g=>{
+    let cur=0,tn=parseFloat(g.tg)||0,pct=0,sm='';
+    if(g.tp==='avg_hours'){
+      const tm=es.reduce((a,e)=>a+e.dm,0);cur=es.length?(tm/es.length/60):0;pct=tn>0?Math.min((cur/tn)*100,100):0;
+      const df=tn-cur;
+      if(df<=0)sm="You've reached your goal. Keep it up.";
+      else if(df<=0.5)sm='Almost there. Try going to bed 15 minutes earlier.';
+      else if(df<=1)sm='Next step: aim for '+(cur+0.5).toFixed(1)+'h average this week.';
+      else sm='Start with '+(cur+0.5).toFixed(1)+'h, then build up gradually.';
+    }else if(g.tp==='weekly_hours'){
+      const now=new Date(),wa=new Date(now);wa.setDate(wa.getDate()-7);
+      const we=es.filter(e=>new Date(e.dt)>=wa);cur=we.reduce((a,e)=>a+e.dm,0)/60;
+      pct=tn>0?Math.min((cur/tn)*100,100):0;
+      const df=tn-cur;sm=df<=0?'Weekly target met.':'Need '+df.toFixed(1)+'h more this week (~'+(df/7).toFixed(1)+'h/night).';
+    }else if(g.tp==='bedtime'){
+      const rb=[...es].sort((a,b)=>new Date(b.dt)-new Date(a.dt)).slice(0,7);
+      if(rb.length){
+        const ab=rb.reduce((a,e)=>{let[h,m]=e.bt.split(':').map(Number);let mn=h*60+m;if(mn<720)mn+=1440;return a+mn},0)/rb.length;
+        let[th,tm]=g.tg.split(':').map(Number);let tmn=th*60+tm;if(tmn<720)tmn+=1440;
+        const df=ab-tmn;
+        if(df<=0){pct=100;sm="You're meeting your bedtime target."}
+        else{pct=Math.max(0,Math.min(100,((1440-df)/1440)*100));
+          if(df<=15)sm='Nearly there. Just 15 minutes earlier.';
+          else if(df<=30)sm='Try setting a reminder 15 minutes before your usual bedtime.';
+          else{const sM=Math.round(ab-15),sH=Math.floor((sM%1440)/60),sMn=sM%60;sm='Start by aiming for '+String(sH>24?sH-24:sH).padStart(2,'0')+':'+String(sMn).padStart(2,'0')+' this week.'}}
+      }else sm='Log some entries to track progress.';
+    }
+    h+=`<div class="gi"><div class="gh"><span class="gl">${tl[g.tp]||g.tp}</span><div style="display:flex;align-items:center;gap:10px"><span class="gv">Target: ${esc(g.tg)}${g.tp!=='bedtime'?'h':''}</span><button class="b br bs" onclick="delGoal('${g.id}')">Remove</button></div></div><div class="pt"><div class="pf" style="width:${pct.toFixed(0)}%"></div></div><div class="gv" style="margin-top:6px">${pct.toFixed(0)}%</div>${sm?`<div class="gs">${esc(sm)}</div>`:''}</div>`;
+  });
+  ct.innerHTML=h;
+}
+
+/* ═══ SETTINGS ═══ */
+function popSet(){document.getElementById('sf').value=cu.fn||'';document.getElementById('sl').value=cu.ln||'';document.getElementById('se').value=cu.em||''}
+function savePro(){
+  const fn=document.getElementById('sf').value.trim(),ln=document.getElementById('sl').value.trim();
+  const us=aU(),ix=us.findIndex(u=>u.id===cu.id);
+  if(ix!==-1){us[ix].fn=fn;us[ix].ln=ln;sU(us);cu=us[ix]}
+  document.getElementById('topN').textContent=fn+' '+ln;toast('Profile saved.');
+}
+function chgPw(){
+  const c=document.getElementById('cP').value,n=document.getElementById('nP').value,cf=document.getElementById('cfP').value,eb=document.getElementById('pwErr');eb.style.display='none';
+  if(!chkH(c,cu.ph)){eb.textContent='Current password incorrect.';eb.style.display='block';return}
+  if(n.length<8){eb.textContent='Min 8 characters.';eb.style.display='block';return}
+  if(!/\d/.test(n)){eb.textContent='Include a number.';eb.style.display='block';return}
+  if(n!==cf){eb.textContent='Passwords do not match.';eb.style.display='block';return}
+  const us=aU(),ix=us.findIndex(u=>u.id===cu.id);
+  if(ix!==-1){us[ix].ph=simHash(n);sU(us);cu=us[ix]}
+  ['cP','nP','cfP'].forEach(id=>document.getElementById(id).value='');toast('Password updated.');
+}
+function expCSV(){
+  const es=mE(),ts=mT();if(!es.length){toast('Nothing to export.','e');return}
+  let csv='Date,Tag,Bedtime,Wake,Duration (mins),Quality,Notes\n';
+  es.forEach(e=>{const t=ts.find(x=>x.id===e.ti);csv+=[e.dt,t?.n||'',e.bt,e.wt,e.dm,e.q,'"'+(e.nt||'').replace(/"/g,'""')+'"'].join(',')+'\n'});
+  const b=new Blob([csv],{type:'text/csv'}),u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download='snoozr_export.csv';a.click();URL.revokeObjectURL(u);toast('CSV downloaded.');
+}
+function delAll(){
+  document.getElementById('deleteMsg').textContent='Delete ALL your data? Entries, tags, goals — everything. Cannot be undone.';
+  document.getElementById('delBtn').onclick=function(){sE(aE().filter(e=>e.ui!==cu.id));sT(aT().filter(t=>t.ui!==cu.id));sG(aG().filter(g=>g.ui!==cu.id));closeDM();toast('All data deleted.','e');goSec('dashboard')};
+  document.getElementById('deleteModal').classList.add('v');
+}
+
+/* ═══ STARTUP ═══ */
+seed();
+setTimeout(()=>{document.getElementById('splash').classList.add('h');const s=ldUser();if(s){cu=s;boot()}else showPage('page-login')},800);
+</script>
+</body>
+</html>
