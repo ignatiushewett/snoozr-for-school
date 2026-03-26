@@ -4,7 +4,7 @@
 
 Webpage: https://ignatiushewett.github.io/snoozr-for-school/Z
 
-Prototype built by Ignatius H. using Sonnet 4.6 and Opus 4.6
+Prototype built by Ignatius H. using Sonnet 4.6, Opus 4.6, Pixlr, Visual Studio Code, and Electron
 
 ## About
 Snoozr is a web-based progressive sleep tracker made with building strong sleep habits over perfecting unrealistic schedules. 
