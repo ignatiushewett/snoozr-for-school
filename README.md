@@ -4,7 +4,7 @@
 
 Webpage: https://ignatiushewett.github.io/snoozr-for-school/Z
 
-Prototype built by Ignatius H. using Sonnet 4.6, Opus 4.6, Pixlr, Visual Studio Code, and Electron
+Prototype built by Ignatius H. using Sonnet 4.6 / Opus 4.6, Pixlr, Visual Studio Code, and Electron
 
 ## About
 Snoozr is a web-based progressive sleep tracker made with building strong sleep habits over perfecting unrealistic schedules. 
@@ -18,4 +18,12 @@ This is an early 'proof of concept' or prototype heavily built using Claude's So
 - Logging System
 - Sleep Tracking
 - Early Goal Generation
+
+## Tools
+- Pixlr: https://pixlr.com/suite/
+- Visual Studio Code: https://code.visualstudio.com/
+- Electron: https://www.electronjs.org/
+- Sonnet 4.6 / Opus 4.6 (via Claude): https://www.claude.ai/
+
+  
 <img src="https://github.com/user-attachments/assets/98bacec3-5c1c-4d99-bf02-9a66e915fcec" width="200"/>
