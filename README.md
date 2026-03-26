@@ -2,7 +2,7 @@
 
 ## Progressive Sleep Tracking
 
-https://ignatiushewett.github.io/Snoozr-for-School/
+Link: https://ignatiushewett.github.io/snoozr-for-school/
 
 Built by Ignatius H. using Sonnet 4.6 via Claude
 
